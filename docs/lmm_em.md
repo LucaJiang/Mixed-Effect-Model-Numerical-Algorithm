@@ -22,8 +22,8 @@ We can treat $\mathbf{\beta}$ as a latent variable because is it unobserved.
 Let $\Sigma = \sigma_\mathbf{\beta}^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n$ be the covariance matrix of $\mathbf{y}$, then the conditional distribution of $\mathbf{y}|\Theta$ is $\mathcal{N}(\mathbf{Z}\mathbf{\omega}, \Sigma)$. The complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\log p(\mathbf{y}| \Theta) &= -\frac{1}{2} \log |\Sigma| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \Sigma^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) + \text{const} \\
-\end{split}\end{equation}.$$
+\log p(\mathbf{y}| \Theta) &= -\frac{1}{2} \log |\Sigma| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \Sigma^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) + \text{const}
+\end{split}\end{equation}$$
 
 ## E-Step
 The E-step is to compute the expectation of the complete data log-likelihood with respect to the conditional distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\Theta$:
@@ -33,8 +33,8 @@ Q(\Theta|\Theta^{(t)}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \
 &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ \log p(\mathbf{y}| \mathbf{\beta}, \Theta) + \log p(\mathbf{\beta}| \Theta) \right] \\
 &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ -\frac{1}{2} \log |\Sigma| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \Sigma^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) + \text{const} \right] \\
 &\quad + \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ -\frac{1}{2} \log |\sigma_\mathbf{\beta}^2 \mathbf{I}_p| - \frac{1}{2} \mathbf{\beta}^T (\sigma_\mathbf{\beta}^2 \mathbf{I}_p)^{-1} \mathbf{\beta} + \text{const} \right] \\
-&\propto - \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ \mathbf{\beta}^T (\sigma_\mathbf{\beta}^2 \mathbf{I}_p)^{-1} \mathbf{\beta} \right] \\
-\end{split}\end{equation}.$$
+&\propto - \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ \mathbf{\beta}^T (\sigma_\mathbf{\beta}^2 \mathbf{I}_p)^{-1} \mathbf{\beta} \right]
+\end{split}\end{equation}$$
 
 Thus, the E-step is to compute the following expectations:
 
@@ -55,14 +55,14 @@ which is equivalent to maximizing (2):
 $$\begin{equation}
 \begin{split}
 &\frac{\partial \ell}{\partial \mathbf{\omega}} = \mathbf{Z}^T \Sigma^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega})=:0\\
-\Rightarrow \hat{\mathbf{\omega}} &= (\mathbf{Z}^T \Sigma^{-1} \mathbf{Z})^{-1} \mathbf{Z}^T \Sigma^{-1} \mathbf{y} \\
+\Rightarrow \hat{\mathbf{\omega}} &= (\mathbf{Z}^T \Sigma^{-1} \mathbf{Z})^{-1} \mathbf{Z}^T \Sigma^{-1} \mathbf{y}
 \end{split}\end{equation}$$
 
 Then, use Method of Moments(MoM) to estimate $\sigma_\beta^2$ and $\sigma_e^2$:
 $$\begin{equation}
 \begin{split}
 \hat{\sigma}_\beta^2 &= \frac{1}{p} \left(\mathbb{E}[\mathbf{\beta}^T\mathbf{\beta}] - \mathbb{E}[\mathbf{\beta}]^2 \right) \\
-\hat{\sigma}_e^2 &= \frac{1}{n} \left(\mathbb{E}[\mathbf{e}^T\mathbf{e}] - \mathbb{E}[\mathbf{e}]^2 \right) \\
+\hat{\sigma}_e^2 &= \frac{1}{n} \left(\mathbb{E}[\mathbf{e}^T\mathbf{e}] - \mathbb{E}[\mathbf{e}]^2 \right)
 \end{split}\end{equation}$$
 
 
