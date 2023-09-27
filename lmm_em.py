@@ -33,7 +33,7 @@ def lmm_em(y, X, Z, tol=1e-10, max_iter=100):
     Sigma = sigma_beta^2 * X * X^T + sigma_e^2 * I
     omega = (Z^T * Sigma^-1 * Z)^-1 * Z^T * Sigma^-1 * y
     # beta|omega = (X^T * X)^-1 * X^T * (y - Z * omega)
-    beta = sigma_beta^2 * X^T * Sigma^-1 * (y - Z * omega)
+    beta = (X^T * X + sigma_e^2 / sigma_beta^2 * I)^-1 * X^T * (y - Z * omega)
     e = y - Z * omega - X * beta
 
     # sigma_beta^2 = (beta^T * beta + sigma_beta^2 * trace(?)) / p
@@ -55,8 +55,7 @@ def lmm_em(y, X, Z, tol=1e-10, max_iter=100):
 
     # tmp
     XXT = X @ X.T
-    # H_beta = np.linalg.inv(XXT.T) @ X.T
-
+    XTX = X.T @ X
 
     # Calculate likelihood
     def likelihood(omega, sigma_beta2, sigma_e2):
@@ -86,8 +85,7 @@ def lmm_em(y, X, Z, tol=1e-10, max_iter=100):
         # E step
         Sigma = sigma_beta2 * XXT + sigma_e2 * np.eye(n)
         Sigma_inv = np.linalg.inv(Sigma)
-        # beta = H_beta @ (y - Z @ omega)
-        beta = sigma_beta2 * X.T @ Sigma_inv @ (y - Z @ omega)
+        beta = np.linalg.inv((XTX + sigma_e2 / sigma_beta2 * np.eye(p))) @ X.T @ (y - Z @ omega)
         e = y - Z @ omega - X @ beta
 
         # M step
@@ -135,43 +133,43 @@ def lmm_em(y, X, Z, tol=1e-10, max_iter=100):
             :iter + 1], sigma_beta2_list[:iter + 1],\
             sigma_e2_list[:iter + 1], beta_post_mean
 
+if __name__ == '__main__':
+    # load data
+    data = pd.read_table('data/XYZ_MoM.txt', sep='\t', header=0).values
+    y = data[:, 0].reshape(-1, 1)
+    Z = data[:, 1:31]
+    X = data[:, 31:]
 
-# load data
-data = pd.read_table('data/XYZ_MoM.txt', sep='\t', header=0).values
-y = data[:, 0].reshape(-1, 1)
-Z = data[:, 1:31]
-X = data[:, 31:]
+    # run EM algorithm
+    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z)
+    # MAX_LENGTH = 200
+    # MAX_X_LENGTH = 100
+    # likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(
+    #     y[:MAX_LENGTH], X[:MAX_LENGTH, :MAX_X_LENGTH], Z[:MAX_LENGTH, :])
 
-# run EM algorithm
-likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z)
-# MAX_LENGTH = 200
-# MAX_X_LENGTH = 100
-# likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(
-#     y[:MAX_LENGTH], X[:MAX_LENGTH, :MAX_X_LENGTH], Z[:MAX_LENGTH, :])
+    # subplot
+    fig, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes[0, 0].plot(likelihood_list)
+    axes[0, 0].set_title('Likelihood')
 
-# subplot
-fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-axes[0, 0].plot(likelihood_list)
-axes[0, 0].set_title('Likelihood')
+    axes[0, 1].plot(sigma_beta2_list, label=r'$\sigma_\beta^2$')
+    axes[0, 1].plot(sigma_e2_list, label=r'$\sigma_e^2$')
+    axes[0, 1].set_title('Unknown Variance')
+    axes[0, 1].legend()
 
-axes[0, 1].plot(sigma_beta2_list, label=r'$\sigma_\beta^2$')
-axes[0, 1].plot(sigma_e2_list, label=r'$\sigma_e^2$')
-axes[0, 1].set_title('Unknown Variance')
-axes[0, 1].legend()
+    axes[1, 0].plot(omega_list.T)
+    axes[1, 0].set_title(r'$\omega$')
 
-axes[1, 0].plot(omega_list.T)
-axes[1, 0].set_title(r'$\omega$')
+    # hist
+    sns.distplot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
+    axes[1, 1].axvline(beta_post_mean,
+                    color='r',
+                    linestyle='--',
+                    label=rf'$\beta={beta_post_mean:.4e}$')
+    axes[1, 1].set_title('Effects')
+    axes[1, 1].legend()
 
-# hist
-sns.distplot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
-axes[1, 1].axvline(beta_post_mean,
-                   color='r',
-                   linestyle='--',
-                   label=rf'$\beta={beta_post_mean:.4e}$')
-axes[1, 1].set_title('Effects')
-axes[1, 1].legend()
-
-plt.suptitle('EM Algorithm for Linear Mixed Model')
-plt.tight_layout()
-plt.savefig('img/lmm_em.png')
-plt.show()
+    plt.suptitle('EM Algorithm for Linear Mixed Model')
+    plt.tight_layout()
+    plt.savefig('img/lmm_em.png')
+    plt.show()
