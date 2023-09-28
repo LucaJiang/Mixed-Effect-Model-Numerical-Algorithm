@@ -1,11 +1,11 @@
-# Use EM to solve linear mixed model
+# Use EM + MFVI to solve linear mixed model
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
+def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
     '''
     Input:
     y: n x 1, response
@@ -31,9 +31,9 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
     beta ~ N(0, sigma_beta^2 * I)
 
     E-step:
-    Gamma = (X^T * X / sigma_e^2 + I_p / sigma_beta^2)^-1
-    mu = Gamma * X^T * (y - Z * omega)/sigma_e^2
-    beta = mu
+    for i: 1 -> p
+    mu_i = (X_-i^T * X_-i / sigma_e^2 + I_p-1 / sigma_beta^2)^-1 * (X_-i^T * (y_-i - Z_-i * omega_-i) / sigma_e^2) + beta_-i / sigma_beta^2).mean
+    beta_i = mu_i
     e = y - Z * omega - X * beta
 
     M-step:
@@ -61,7 +61,8 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
     # Calculate likelihood
     def likelihood(omega, Sigma, Sigma_inv):
         tmp = y - Z @ omega - X @ beta
-        likelihood = -n / 2 * np.log(2 * np.pi) - 0.5 * np.log(np.linalg.det(Sigma) + tol) - 0.5 * tmp.T @ Sigma_inv @ tmp
+        likelihood = -n / 2 * np.log(2 * np.pi) - 0.5 * np.log(
+            np.linalg.det(Sigma) + tol) - 0.5 * tmp.T @ Sigma_inv @ tmp
         return likelihood
 
     # Record parameters in each iteration
@@ -84,15 +85,16 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
     for iter in range(1, max_iter):
         # E step
         Gamma = np.linalg.inv(XTX / sigma_e2 + np.eye(p) / sigma_beta2)
-        mu = Gamma @ X.T @ (y - Z @ omega) / sigma_e2
-        beta = mu
+        mu = Gamma @ (X.T @ (y - Z @ omega) / sigma_e2 + beta / sigma_beta2)
+        beta = (np.ones((p, p)) - np.eye(p)) @ mu / (p - 1)
         e = y - Z @ omega - X @ beta
 
         # M step
         omega = ZTZinvZT @ (y - X @ mu)
         sigma_beta2 = (np.trace(Gamma) + (mu.T @ mu)[0, 0]) / p
         sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 +
-                    np.trace(X @ (Gamma + mu @ mu.T) @ X.T) - 2 * ((y - Z @ omega).T @ X @ mu))[0, 0] / n
+                    np.trace(X @ (Gamma + mu @ mu.T) @ X.T) - 2 *
+                    ((y - Z @ omega).T @ X @ mu))[0, 0] / n
 
         # Update Sigma and Sigma_inv
         Sigma = sigma_beta2 * XXT + sigma_e2 * np.eye(n)
@@ -133,16 +135,17 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
 if __name__ == '__main__':
     # load data
     data = pd.read_table('data/fake_data.txt', sep='\t', header=0).values
+    # data = np.asmatrix(data)
     # data = pd.read_table('data/XYZ_MoM.txt', sep='\t', header=0).values
     y = data[:, 0].reshape(-1, 1)
     Z = data[:, 1:31]
     X = data[:, 31:]
 
     # run EM algorithm
-    # likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z)
+    # likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_MFVI(y, X, Z)
     MAX_LENGTH = 200
     MAX_X_LENGTH = 100
-    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(
+    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_MFVI(
         y[:MAX_LENGTH], X[:MAX_LENGTH, :MAX_X_LENGTH], Z[:MAX_LENGTH, :])
 
     # subplot
@@ -167,7 +170,7 @@ if __name__ == '__main__':
     axes[1, 1].set_title('Effects')
     axes[1, 1].legend()
 
-    plt.suptitle('EM Algorithm for Linear Mixed Model')
+    plt.suptitle('EM + MFVI Algorithm for Linear Mixed Model')
     plt.tight_layout()
-    plt.savefig('img/lmm_em.png')
+    plt.savefig('img/lmm_emmfvi.png')
     plt.show()

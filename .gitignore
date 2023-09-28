@@ -2,6 +2,7 @@ data/
 docs/lmm_em.md
 .tmp*/
 .vscode/
+tempCodeRunnerFile.py
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
