@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.linalg import lu
+from scipy.stats import multivariate_normal
 
 
 def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
@@ -20,6 +22,7 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
     sigma_beta2_list: record sigma_beta^2 in each iteration
     sigma_e2_list: record sigma_e^2 in each iteration
     beta_post_mean: posterior mean of beta
+    ELBO_list: evidence lower bound
 
     Notation:
     omega: c x 1, fixed effect coefficient
@@ -40,7 +43,8 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
     omega = (Z^T * Z)^-1 * Z^T * (y-X*mu)
     sigma_beta^2 = (trace(Gamma) + mu^T * mu ) / p
     sigma_e^2 = ((y - Z * W)^T * (y - Z * W) + trace(X * (Gamma + mu * mu^T) X^T) - 2 * (y - Z * W)^T * X * mu) / n
-    l = - (n + p) / 2 * log(2 * pi) - 1 / 2 * log(sigma_e^2) - 1 / 2 / sigma_e^2 * (y - Z * W - X * mu)^T * (y - Z * W - X * mu) - 1 / 2 * log(|Gamma|) - 1 / 2 * (beta - mu)^T * Gamma * (beta - mu)
+    l = - n / 2 * log(2 * pi) - 1 / 2 * log(|Sigma|) - 1 / 2 * (y - Z * omega)^T * Sigma^-1 * (y - Z * omega)
+    ELBO: MC
     '''
     n, p = X.shape
     n_, c = Z.shape
@@ -58,11 +62,13 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
     XTX = X.T @ X
     ZTZinvZT = np.linalg.inv(Z.T @ Z) @ Z.T
 
-    # Calculate likelihood
     def likelihood(omega, Sigma, Sigma_inv):
-        tmp = y - Z @ omega - X @ beta
+        tmp = y - Z @ omega
+        # Find det with LU decomposition
+        P, _, U = lu(Sigma)
+        Sigma_det = np.prod(np.diag(U)) * ((-1)**np.count_nonzero(P))
         likelihood = -n / 2 * np.log(2 * np.pi) - 0.5 * np.log(
-            np.linalg.det(Sigma) + tol) - 0.5 * tmp.T @ Sigma_inv @ tmp
+            Sigma_det) - 0.5 * tmp.T @ Sigma_inv @ tmp
         return likelihood
 
     # Record parameters in each iteration
@@ -71,6 +77,7 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
     omega_list = np.zeros((c, max_iter))
     sigma_beta2_list = np.zeros(max_iter)
     sigma_e2_list = np.zeros(max_iter)
+    ELBO_list = np.zeros(max_iter)
 
     # Initialize record
     iter = 0
@@ -102,10 +109,23 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
         # Calculate likelihood
         likelihood_list[iter] = likelihood(omega, Sigma, Sigma_inv)
 
+        # Calculate ELBO
+        repeat = 10
+        # Sample from variational distribution
+        beta_sample = np.random.normal(mu.reshape((1, p)), np.ones((repeat, 1)) * np.sqrt(sigma_beta2), size=(repeat, p))
+        # Compute likelihood and prior
+        log_likelihood = np.log(-likelihood_list[iter])
+        prior_mean = np.zeros((p, 1))
+        prior_cov = np.diag(np.ones(p)) * sigma_beta2
+        log_prior = np.sum(multivariate_normal.logpdf(beta_sample, prior_mean.flatten(), prior_cov))
+        entropy = 0.5 * p * (1 + np.log(2 * np.pi)) + 0.5 * np.sum(np.log(sigma_beta2))
+        elbo = log_likelihood + log_prior - entropy
+        
         # Record parameters
         omega_list[:, iter] = omega.flatten()
         sigma_beta2_list[iter] = sigma_beta2
         sigma_e2_list[iter] = sigma_e2
+        ELBO_list[iter] = elbo
 
         # Check convergence
         if np.abs(likelihood_list[iter] - likelihood_list[iter - 1]) < tol:
@@ -129,13 +149,15 @@ def lmm_MFVI(y, X, Z, tol=1e-6, max_iter=10):
 
     return likelihood_list[:iter +1], omega_list[:,\
             :iter + 1], sigma_beta2_list[:iter + 1],\
-            sigma_e2_list[:iter + 1], beta_post_mean
+            sigma_e2_list[:iter + 1], beta_post_mean, ELBO_list[:iter + 1]
 
 
 if __name__ == '__main__':
     # load data
-    data = pd.read_table('data/fake_data.txt', sep='\t', header=0).values
-    # data = np.asmatrix(data)
+    # data_name = 'fake_data'
+    data_name = 'XYZ_MoM'
+    data = pd.read_table('data/' + data_name + '.txt', sep='\t',
+                         header=0).values
     # data = pd.read_table('data/XYZ_MoM.txt', sep='\t', header=0).values
     y = data[:, 0].reshape(-1, 1)
     Z = data[:, 1:31]
@@ -145,13 +167,15 @@ if __name__ == '__main__':
     # likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_MFVI(y, X, Z)
     MAX_LENGTH = 200
     MAX_X_LENGTH = 100
-    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_MFVI(
+    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean, ELBO_list = lmm_MFVI(
         y[:MAX_LENGTH], X[:MAX_LENGTH, :MAX_X_LENGTH], Z[:MAX_LENGTH, :])
 
     # subplot
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    axes[0, 0].plot(likelihood_list)
-    axes[0, 0].set_title('Likelihood')
+    axes[0, 0].plot(likelihood_list, label='likelihood')
+    axes[0, 0].plot(ELBO_list, label='ELBO')
+    axes[0, 0].legend()
+    axes[0, 0].set_title('Likelihood and ELBO')
 
     axes[0, 1].plot(sigma_beta2_list, label=r'$\sigma_\beta^2$')
     axes[0, 1].plot(sigma_e2_list, label=r'$\sigma_e^2$')
@@ -172,5 +196,5 @@ if __name__ == '__main__':
 
     plt.suptitle('EM + MFVI Algorithm for Linear Mixed Model')
     plt.tight_layout()
-    plt.savefig('img/lmm_emmfvi.png')
+    plt.savefig('img/lmm_em' + data_name + '.png')
     plt.show()

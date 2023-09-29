@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy.linalg import lu
 
 
 def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
@@ -37,10 +38,12 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
     e = y - Z * omega - X * beta
 
     M-step:
-    omega = (Z^T * Z)^-1 * Z^T * (y-X*mu)
+    omega = (Z^T * Z)^-1 * Z^T * (y - X * mu)
     sigma_beta^2 = (trace(Gamma) + mu^T * mu ) / p
     sigma_e^2 = ((y - Z * W)^T * (y - Z * W) + trace(X * (Gamma + mu * mu^T) X^T) - 2 * (y - Z * W)^T * X * mu) / n
-    l = - (n + p) / 2 * log(2 * pi) - 1 / 2 * log(sigma_e^2) - 1 / 2 / sigma_e^2 * (y - Z * W - X * mu)^T * (y - Z * W - X * mu) - 1 / 2 * log(|Gamma|) - 1 / 2 * (beta - mu)^T * Gamma * (beta - mu)
+    
+    likelihood:
+    l = - n / 2 * log(2 * pi) - 1 / 2 * log(|Sigma|) - 1 / 2 * (y - Z * omega)^T * Sigma^-1 * (y - Z * omega)
     '''
     n, p = X.shape
     n_, c = Z.shape
@@ -60,8 +63,12 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
 
     # Calculate likelihood
     def likelihood(omega, Sigma, Sigma_inv):
-        tmp = y - Z @ omega - X @ beta
-        likelihood = -n / 2 * np.log(2 * np.pi) - 0.5 * np.log(np.linalg.det(Sigma) + tol) - 0.5 * tmp.T @ Sigma_inv @ tmp
+        tmp = y - Z @ omega
+        # Find det with LU decomposition
+        P, _, U = lu(Sigma)
+        Sigma_det = np.prod(np.diag(U)) * ((-1)**np.count_nonzero(P))
+        likelihood = -n / 2 * np.log(2 * np.pi) - 0.5 * np.log(
+            Sigma_det) - 0.5 * tmp.T @ Sigma_inv @ tmp
         return likelihood
 
     # Record parameters in each iteration
@@ -92,7 +99,8 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
         omega = ZTZinvZT @ (y - X @ mu)
         sigma_beta2 = (np.trace(Gamma) + (mu.T @ mu)[0, 0]) / p
         sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 +
-                    np.trace(X @ (Gamma + mu @ mu.T) @ X.T) - 2 * ((y - Z @ omega).T @ X @ mu))[0, 0] / n
+                    np.trace(X @ (Gamma + mu @ mu.T) @ X.T) - 2 *
+                    ((y - Z @ omega).T @ X @ mu))[0, 0] / n
 
         # Update Sigma and Sigma_inv
         Sigma = sigma_beta2 * XXT + sigma_e2 * np.eye(n)
@@ -132,8 +140,11 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10):
 
 if __name__ == '__main__':
     # load data
-    data = pd.read_table('data/fake_data.txt', sep='\t', header=0).values
-    # data = pd.read_table('data/XYZ_MoM.txt', sep='\t', header=0).values
+    # data_name = 'fake_data'
+    data_name = 'XYZ_MoM'
+    data = pd.read_table('data/' + data_name + '.txt', sep='\t',
+                         header=0).values
+
     y = data[:, 0].reshape(-1, 1)
     Z = data[:, 1:31]
     X = data[:, 31:]
@@ -169,5 +180,5 @@ if __name__ == '__main__':
 
     plt.suptitle('EM Algorithm for Linear Mixed Model')
     plt.tight_layout()
-    plt.savefig('img/lmm_em.png')
+    plt.savefig('img/lmm_em' + data_name + '.png')
     plt.show()
