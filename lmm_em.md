@@ -56,10 +56,11 @@ $$\begin{equation}
 \frac{\partial \ell_c}{\partial \mathbf{\omega}} &= \frac{1}{\sigma_e^2} \mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) =: 0\\
 \Rightarrow \hat{\mathbf{\omega}} &= (\mathbf{Z}^T \mathbf{Z})^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\beta})\\
 \frac{\partial \ell_c}{\partial \sigma_\beta^2} &= -\frac{p}{2\sigma_\beta^2} + \frac{1}{2\sigma_\beta^4} \mathbf{\beta}^T \mathbf{\beta} =: 0\\
-\Rightarrow \hat{\sigma}_\beta^2 &= \frac{1}{p} \mathbf{\beta}^T \mathbf{\beta}\\
+\Rightarrow \hat{\sigma}_\beta^2 &= \frac{1}{p} \|\mathbf{\beta}\|^2 \\
 \frac{\partial \ell_c}{\partial \sigma_e^2} &= -\frac{n}{2\sigma_e^2} + \frac{1}{2\sigma_e^4} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2 =: 0\\
 \Rightarrow \hat{\sigma}_e^2 &= \frac{1}{n} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2\\
-&= \frac{1}{n} \left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}\left(\mathbf{X}\mathbf{\beta}\mathbf{\beta}^T\mathbf{X}^T\right) - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\beta}\right)
+&= \frac{1}{n} \left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \|\mathbf{X}\mathbf{\beta}\|^2 - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\beta}\right)
+% &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}\left(\mathbf{\beta}^T\mathbf{X}^T\mathbf{X}\mathbf{\beta}\right) - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\beta}\right)
 \end{split}\end{equation}$$
 
 ### Latent Variable is Unknown
@@ -83,16 +84,24 @@ p(\mathbf{\beta}| \mathbf{y}, \Theta)
 
 where $\Gamma = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \Gamma \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. 
 
-Therefore, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \Theta \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$ and $p\hat{\sigma}_\beta^2=\text{tr}\mathbb{E}[\mathbf{\beta}^T\mathbf{\beta}|\mathbf{y}, \Theta] = \text{tr}\left(\mathbb{V}[\mathbf{\beta}|\mathbf{y}, \Theta]\right) +\mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta]^T \mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta] = \text{tr}(\Gamma) + \mathbf{\mu}^T\mathbf{\mu}$.
+Therefore, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \Theta \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$ and 
+$$\begin{equation}
+\begin{split}
+p\hat{\sigma}_\beta^2 &=\mathbb{E}[\|\mathbf{\beta}\|^2|\mathbf{y}, \Theta] = \text{tr}\left(\mathbb{V}[\mathbf{\beta}|\mathbf{y}, \Theta]\right) +\mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta]^T \mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta] = \text{tr}(\Gamma) + \mathbf{\mu}^T\mathbf{\mu},\\
+n\hat{\sigma}_e^2 &= \mathbb{E}[\|\mathbf{y}-\mathbf{Z}\mathbf{\omega}-\mathbf{X}\mathbf{\beta}\|^2|\mathbf{y}, \Theta]\\
+&= \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}\left(\Gamma \mathbf{X}^T\mathbf{X}\right)+ \mathbf{\mu}^T\mathbf{X}^T\mathbf{X}\mathbf{\mu} - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu}
+\end{split}\end{equation}$$
+
+Note that $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\Gamma \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu})$.
 
 ### Complete Data Log-Likelihood
 Since
-$$\begin{equation} \mathbf{y}|\mathbf{\Theta}\sim \mathcal{N}(\mathbf{Z}\mathbf{\omega}, \mathbf{\Sigma})\end{equation}$$
+$$\begin{equation} \mathbf{y}|\mathbf{\Theta}\sim \mathcal{N}(\mathbf{Z}\mathbf{\omega} + \mathbf{X}\mathbf{\beta}, \mathbf{\Sigma})\end{equation}$$
 where $\mathbf{\Sigma} = \mathbf{\sigma}_\beta^2 \mathbf{X}\mathbf{X}^T + \mathbf{\sigma}_e^2 \mathbf{I}_n$, the  complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\Theta) &= \log p(\mathbf{y}, \Theta)\\
-&= -\frac{n}{2} \log (2\pi) -\frac{1}{2} \log |\mathbf{\Sigma}| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{\Sigma}^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} )
+\ell_c(\Theta|\mathbf{y}) &= \log p(\mathbf{y}, \Theta)\\
+&= -\frac{n}{2} \log (2\pi) -\frac{1}{2} \log |\mathbf{\Sigma}| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T \mathbf{\Sigma}^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})
 \end{split}\end{equation}$$
 
 ## E-Step
@@ -106,8 +115,9 @@ Q(\Theta|\Theta^{(t)}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \
 Thus, the E-step is to compute the following expectations:
 
 $$\begin{equation}
-\hat{\mathbf{\beta}}^{(t+1)}= \mathbf{\mu}^{(t)} \quad \text{and} \quad \hat{\mathbf{e}}^{(t+1)} = \mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t)} - \mathbf{X}\hat{\beta}^{(t+1)}
+\hat{\mathbf{\beta}}^{(t+1)}= \mathbf{\mu}^{(t)}
 \end{equation}$$
+<!-- \quad \text{and} \quad \hat{\mathbf{e}}^{(t+1)} = \mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t)} - \mathbf{X}\hat{\beta}^{(t+1)} -->
 where $\Gamma = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \Gamma \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$.
 
 
@@ -120,18 +130,15 @@ which is equivalent to maximizing (2) and according to the results in (4), we ha
 $$\begin{equation}
 \begin{split}
 \hat{\mathbf{\omega}}^{(t+1)} &= (\mathbf{Z}^T \mathbf{Z})^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\mu}^{(t+1)})\\
-\hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\text{tr}(\Gamma^{(t+1)}) + \mathbf{\mu}^{(t+1)T} \mathbf{\mu}^{(t+1)}\right)\\
-\hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}^{(t+1)}\|^2 + \text{tr}\left(\mathbf{X}\left(\Gamma + \mathbf{\mu}^{(t+1)}\mathbf{\mu}^{(t+1)T}\right)\mathbf{X}^T\right) - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega}^{(t+1)})^T \mathbf{X}\mathbf{\mu}^{(t+1)}\right)
+\hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\text{tr}(\Gamma^{(t+1)}) + \| \mathbf{\mu}^{(t+1)}\|^2 \right)\\
+\hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}^{(t+1)}\|^2 + \text{tr}\left(\Gamma^{(t+1)}\mathbf{X}^T\mathbf{X}\right)+ \|\mathbf{X}\mathbf{\mu}^{(t+1)} \|^2 - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega}^{(t+1)})^T \mathbf{X}\mathbf{\mu}^{(t+1)}\right)
 \end{split}\end{equation}$$
-<!-- where $\Sigma = \sigma_\mathbf{\beta}^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n$. -->
-
 Then the complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
 \ell_c(\Theta) &= -\frac{n}{2} \log (2\pi) - \frac{1}{2} \log |\mathbf{\Sigma}^{(t+1)}| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)})^T (\mathbf{\Sigma}^{(t+1)})^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)} ) 
 \end{split}\end{equation}$$
-
-When $|\ell_c(\Theta^{(t+1)}) - \ell_c(\Theta^{(t)})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
+where $\Sigma = \sigma_\mathbf{\beta}^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n$. When $|\ell_c(\Theta^{(t+1)}) - \ell_c(\Theta^{(t)})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
 
 
 ## EM Algorithm
@@ -148,8 +155,17 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
 The following results are obtained by running the EM algorithm on the given dataset.
 [Link to code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result)
 
+Calculation details:
+- $\log |\mathbf{\Sigma}|$: Directly calculate the log determinant of $\mathbf{\Sigma}$ would cause numerical overflow:
+```python
+RuntimeWarning: overflow encountered in reduce return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
+```
+That's because "If an array has a very small or very large determinant, then a call to `det` may overflow or underflow". When the dimension of $\mathbf{\Sigma}$ is large, $|\mathbf{\Sigma}|$ would be extremely close to zero so that it may be considered as zero by numpy. Therefore, we use $\log |\mathbf{\Sigma}| = \sum_{i=1}^n \log \lambda_i$, where $\lambda_i$ is the $i$-th eigenvalue of $\mathbf{\Sigma}$.
+
+Alternative methods: np.linalg.slogdet apply LU factorization to calculate the log determinant of a matrix. [doc](https://numpy.org/doc/stable/reference/generated/numpy.linalg.slogdet.html)
+
 ## References
-1. An EM Algorithm for Linear Mixed Effects Models. jchiquet.github.io/MAP566/docs/mixed-models/map566-lecture-EM-linear-mixed-model
+1. An EM Algorithm for Linear Mixed Effects Models. [MAP566](https://jchiquet.github.io/MAP566/docs/mixed-models/map566-lecture-EM-linear-mixed-model.html)
 2. Lindstrom M J, Bates D M. Newton—Raphson and EM algorithms for linear mixed-effects models for repeated-measures data[J]. Journal of the American Statistical Association, 1988, 83(404): 1014-1022. https://www.jstor.org/stable/2290128
 
 3. Laird N M, Ware J H. Random-effects models for longitudinal data[J]. Biometrics, 1982: 963-974. https://www.jstor.org/stable/2529876

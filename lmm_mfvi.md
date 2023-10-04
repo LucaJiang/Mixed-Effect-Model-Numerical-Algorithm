@@ -4,6 +4,7 @@
   - [Mean-Field Variational Inference (MFVI)](#mean-field-variational-inference-mfvi)
   - [Calculation of ELBO](#calculation-of-elbo)
   - [EM Algorithm with MFVI](#em-algorithm-with-mfvi)
+  - [Code and Results](#code-and-results)
   - [References](#references)
 
 In the previous section, we have applied the EM algorithm to mixed effect model. In this section, we will use the MFVI algorithm to estimate the distributions of latent variables instead of using the MLE in E-step.
@@ -81,6 +82,13 @@ Using the following algorithm to estimate $\mathbb{E}(\mathbf{\beta})$ in the
     2. M-step: Estimate $\hat{\Theta}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
 3. Compute $\text{ELBO}(\mathbf{\mu}) = \mathbb{E}\left[\log p(\mathbf{y}, \mathbf{\beta})\right] - \mathbb{E}\left[\log q(\mathbf{\beta})\right]$. 
 4. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
+
+## Code and Results
+The following results are obtained by running the EM + MFVI algorithm on the given dataset.
+[Link to code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/mfvi_result)
+
+Calculation details:
+ToDO
 
 ## References
 1.  Blei D M, Kucukelbir A, McAuliffe J D. [Variational Inference: A Review for Statisticians](https://arxiv.org/pdf/1601.00670.pdf) [J]. Journal of the American statistical Association, 2017, 112(518): 859-877.

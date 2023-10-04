@@ -9,10 +9,10 @@ p = 100
 c = 30
 X = np.random.randn(n, p) * 0.1
 Z = np.random.randn(n, c)
-beta = np.random.randn(p, 1)
+beta = np.random.randn(p, 1) - 0.05
 omega = np.random.randn(c, 1) + 1.5
-sigma_beta2 = 0.2
-sigma_e2 = 0.01
+sigma_beta2 = 2
+sigma_e2 = 0.0001
 e = np.random.randn(n, 1) * np.sqrt(sigma_e2)
 
 y = Z @ omega + X @ beta + e
