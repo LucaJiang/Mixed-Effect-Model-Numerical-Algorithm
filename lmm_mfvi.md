@@ -23,7 +23,7 @@ In the MFVI algorithm, let $\mathbf{q(\mathbf{\beta})} = \prod_{i=1}^{n}q(\beta_
 $$
 \begin{equation} \begin{split}
 \mathcal{L}(\mathbf{q}) &= \mathbb{E}_{\mathbf{q(\mathbf{\beta})}}[\log p(\mathbf{y})+\log p(\mathbf{\beta}|\mathbf{y}) + \log \mathbf{q(\mathbf{\beta})}] \\
-&= \log p(\mathbf{y}) + \sum_{i=1}^{n}\mathbb{E}_{q(\beta_i)}[\log p(\beta_i|\mathbf{\beta}_{-i}, \mathbf{y})] - \sum_{i=1}^{n}\mathbb{E}_{q(\beta_i)}[\log q(\beta_i)]
+&= \log p(\mathbf{y}) + \sum_{i=1}^{n}\mathbb{E}_{q(\beta_i)}[\log p(\beta_i|\mathbf{\beta}, \mathbf{y})] - \sum_{i=1}^{n}\mathbb{E}_{q(\beta_i)}[\log q(\beta_i)]
 \end{split}\end{equation}$$
 where $\mathbf{\beta}_{-i} = \{\mathbf{\beta}_j\}_{j\neq i}$.
 
@@ -47,11 +47,16 @@ $$\begin{equation}
 \log p(\mathbf{\beta}_{-i}| \mathbf{\mu}_{-i}) &= -\frac{p-1}{2} \log (2\pi) -\frac{p-1}{2} \log \sigma_\beta^2 \\&\quad - \frac{1}{2\sigma_\beta^2} \left(\mathbf{\beta}_{-i}-\mathbf{\mu}_{-i}\right)^T \left(\mathbf{\beta}_{-i}-\mathbf{\mu}_{-i}\right)
 \end{split}\end{equation}$$
 
-So the update equations for $\mu_i$ is:
-$$
-\begin{equation}\begin{split}
-\mu_i =\left(\frac{\mathbf{X}^T_{-i} \mathbf{X}_{-i}}{\sigma_e^2} + \frac{\mathbf{I}_{p-1}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T_{-i}\left(\mathbf{y}_{-i}- \mathbf{Z}_{-i}\mathbf{\omega}_{-i}\right)}{\sigma_e^2} + \frac{\mathbf{\mu}_{-i}}{\sigma_\mathbf{\beta}^2} \right)\mathbf{1}_{p-1}/(p-1)
-\end{split}\end{equation}$$
+So the update equations for $\mathbf{\mu}$ is:
+$$\begin{equation}
+\mathbf{\mu}^{(t+1)} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p-1}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right)}{\sigma_e^2} + \frac{\mathbf{\mu}^{(t)}}{\sigma_\mathbf{\beta}^2} \right)
+\end{equation}$$
+
+Equation (6) can be rewritten as:
+$$\begin{equation}
+\mathbf{\mu} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p-1}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\mathbf{X}}{\sigma_e^2} \left(\mathbf{X}^T \mathbf{X}\right)^{-1}\mathbf{X}^T \left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right) + \frac{\mathbf{\beta}}{\sigma_\mathbf{\beta}^2} \right)
+\end{equation}$$
+which is a weighted average of the MLE solve of $\mathbf{y}-\mathbf{Z}\mathbf{\omega} = \mathbf{X}\mathbf{\beta}$ and the prior $\mathbf{\beta} \sim \mathcal{N}(\mathbf{0}, \sigma_\mathbf{\beta}^2 \mathbf{I}_{p})$.  
 
 ## Calculation of ELBO
 To calculate the ELBO, we need to compute the expected log joint probability of the data and the model parameters under the variational distribution, i.e.,
@@ -93,5 +98,6 @@ ToDO
 ## References
 1.  Blei D M, Kucukelbir A, McAuliffe J D. [Variational Inference: A Review for Statisticians](https://arxiv.org/pdf/1601.00670.pdf) [J]. Journal of the American statistical Association, 2017, 112(518): 859-877.
 
+2. https://jchiquet.github.io/MAP566/docs/mixed-models/map566-lecture-linear-mixed-model.html
 
 
