@@ -23,52 +23,52 @@ $$\begin{equation}
 \end{equation}$$
 where $\mathbf{\omega} \in \mathbb{R}^c$ is the vector of fixed effects, $\mathbf{\beta} \in \mathbb{R}^p$ is the vector of random effects with $\mathbf{\beta} \sim \mathcal{N}(\mathbf{0}, \sigma^2_\mathbf{\beta} \mathbf{I}_p)$, and $\mathbf{e} \sim \mathcal{N}(\mathbf{0}, \sigma^2_e \mathbf{I}_n)$ is the independent noise term. 
 
-Let $\mathbf{\Theta}$ denote the set of unknown parameters $\mathbf{\Theta} = \{\mathbf{\omega}, \sigma^2_\mathbf{\beta}, \sigma^2_e\}$. Under the framework of EM algorithm, we can treat $\mathbf{\beta}$ as a latent variable.
+Let $\mathbf{\Theta}$ denote the set of unknown parameters $\mathbf{\Theta} = \{\mathbf{\omega}, \sigma^2_\mathbf{\beta}, \sigma^2_e\}$. Under the framework of EM algorithm, we can treat $\mathbf{\beta}$ as a latent variable. Below is the directed acyclic graph below for our model.
+![DAG](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp)
 
 In the following sections, we will first find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\hat{\mathbf{\Theta}}$ in the E-step. Then we will assume that $\mathbf{\beta}$ has been estimated by $\hat{\mathbf{\beta}}$ and find the ML estimator of $\mathbf{\Theta}$ which is used in M-step. The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. Finally, we will calculate and track the complete data log-likelihood $\ell_c(\mathbf{\Theta})$ to check the convergence of the algorithm.
 
 
 ## Statistical Inference in LMM
-Question: Can we use $\mathbf{y}-\mathbf{Z}\mathbf{\omega}|\Theta, \mathbf{\beta} \sim \mathcal{N}(\mathbf{X}\mathbf{\beta}, \sigma_\beta^2\mathbf{X}\mathbf{X}^T + \sigma_e^2\mathbf{I}_n)$?[^1] The following derivation are based on Ref 1.
+Question: Can we use $\mathbf{y}-\mathbf{Z}\mathbf{\omega}| \mathbf{\Theta}, \mathbf{\beta} \sim \mathcal{N}(\mathbf{X}\mathbf{\beta}, \sigma_\beta^2\mathbf{X}\mathbf{X}^T + \sigma_e^2\mathbf{I}_n)$?[^1] The following derivation are based on Ref 1.
 
 [^1]: If so, $\omega = (\mathbf{Z}^T\Sigma^{-1} \mathbf{Z})^{-1} \mathbf{Z}^T\Sigma^{-1} \mathbf{y}$, where $\Sigma = \sigma_\beta^2\mathbf{X}\mathbf{X}^T + \sigma_e^2\mathbf{I}_n$. And $\mathbf{\beta}= \sigma_\beta^2\mathbf{X}^T\Sigma^{-1} (\mathbf{y}-\mathbf{Z}\mathbf{\omega})$, $\mathbb{V}(\mathbf{\omega})= (\mathbf{Z}\Sigma^{-1}\mathbf{X})^{-1}$, $\mathbb{V}(\mathbf{\beta})=\sigma_\beta^4 \mathbf{X}^T {\Sigma^{-1}-\Sigma^{-1}\mathbf{Z}(\mathbf{Z}\Sigma^{-1}\mathbf{Z})^{-1}\mathbf{Z}^T\Sigma^{-1}}\mathbf{X}$. More details in Ref 2 and 3.
 
 
 ### Statistical Inference in E-Step
-The complete data log-likelihood is given by
+The E-step aims to find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\mathbf{\Theta}$. The complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\Theta) &= \log p(\mathbf{y}, \mathbf{\beta}, \Theta)\\
-&= \log p(\mathbf{\beta}| \mathbf{y}, \Theta) + \log p(\mathbf{y}| \Theta)
+\ell_c(\mathbf{\Theta}) &= \log p(\mathbf{y}, \mathbf{\beta}, \mathbf{\Theta})\\
+&= \log p(\mathbf{\beta}| \mathbf{y}, \mathbf{\Theta}) + \log p(\mathbf{y}| \mathbf{\Theta})
 \end{split}\end{equation}$$
-
-However the posterior distribution of $\mathbf{\beta}$ can not be obtained directly. Instead, by applying Bayes' rule, we have
+where $p(\mathbf{y}| \mathbf{\Theta})$ dose not depend on $\mathbf{\beta}$. However the posterior distribution of $\mathbf{\beta}$ can not be obtained directly. Instead, by applying Bayes' rule, we have
 $$\begin{equation}
 \begin{split}
-p(\mathbf{\beta}| \mathbf{y}, \Theta) 
-&= \frac{p(\mathbf{y}| \mathbf{\beta}, \Theta) p(\mathbf{\beta}| \Theta)}{p(\mathbf{y}| \Theta)}\\
-&\propto p(\mathbf{y}| \mathbf{\beta}, \Theta) p(\mathbf{\beta}| \Theta)\\
+p(\mathbf{\beta}| \mathbf{y}, \mathbf{\Theta}) 
+&= \frac{p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) p(\mathbf{\beta}| \mathbf{\Theta})}{p(\mathbf{y}| \mathbf{\Theta})}\\
+&\propto p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) p(\mathbf{\beta}| \mathbf{\Theta})\\
 &\propto \exp \left\{-\frac{1}{2}(\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) \right\} \\
 &\quad \times \exp \left\{-\frac{1}{2} \mathbf{\beta}^T (\sigma_\mathbf{\beta}^2 \mathbf{I}_p)^{-1} \mathbf{\beta} \right\} \\
 &\propto \exp \left\{-\frac{1}{2}\left( \mathbf{\beta} - \mathbf{\mu}\right)^T \Gamma^{-1} \left( \mathbf{\beta} - \mathbf{\mu}\right) \right\}
 \end{split}\end{equation}$$
 
-where $\Gamma = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \Gamma \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \Theta \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$.
+where $\Gamma = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \Gamma \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$.
 
 ### Statistical Inference in M-Step
 If $\mathbf{\beta}$ has been estimated, the conditional distribution of $\mathbf{y}$ become 
-$$\mathbf{y}|\Theta, \mathbf{\beta} \sim \mathcal{N}(\mathbf{Z}\mathbf{\omega}+ \mathbf{X}\mathbf{\beta}, \sigma_e^2\mathbf{I}_n)$$
+$$\mathbf{y}| \mathbf{\Theta}, \mathbf{\beta} \sim \mathcal{N}(\mathbf{Z}\mathbf{\omega}+ \mathbf{X}\mathbf{\beta}, \sigma_e^2\mathbf{I}_n)$$
 
 Then the ML estimator of $\mathbf{\Theta}$ maximizes the complete data log-likelihood:
 $$\begin{equation}
 \begin{split}
-\ell_c(\Theta) &= \log p(\mathbf{y}, \mathbf{\beta}, \Theta)\\
-&= \log p(\mathbf{y}| \mathbf{\beta}, \Theta) + \log p(\mathbf{\beta}| \Theta)\end{split}\end{equation}$$
+\ell_c(\Theta) &= \log p(\mathbf{y}, \mathbf{\beta}, \mathbf{\Theta})\\
+&= \log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) + \log p(\mathbf{\beta}| \Theta)\end{split}\end{equation}$$
 
 The marginal log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\log p(\mathbf{y}| \mathbf{\beta}, \Theta) &= -\frac{n}{2} \log (2\pi) -\frac{1}{2} \log |\sigma_e^2\mathbf{I}_n| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})\\
+\log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) &= -\frac{n}{2} \log (2\pi) -\frac{1}{2} \log |\sigma_e^2\mathbf{I}_n| \\&\quad - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})\\
 &= -\frac{n}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^2 - \frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2
 \end{split}\end{equation}$$
 and
@@ -77,7 +77,7 @@ $$\begin{equation}
 \log p(\mathbf{\beta}| \Theta) &= -\frac{p}{2} \log (2\pi) -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
 \end{split}\end{equation}$$
 
-Maximizing (5) and (6) with respect to $\mathbf{\Theta}$ is equivalent to maximizing the following objective function:
+Maximizing (5) and (6) with respect to $\mathbf{\Theta}$ is equivalent to set the partial derivatives of $\ell_c(\Theta)$ with respect to $\mathbf{\Theta}$ to zero. Thus, we have
 $$\begin{equation}
 \begin{split}
 \frac{\partial \ell_c}{\partial \mathbf{\omega}} &= \frac{1}{\sigma_e^2} \mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) =: 0\\
@@ -90,24 +90,35 @@ $$\begin{equation}
 % &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}\left(\mathbf{\beta}^T\mathbf{X}^T\mathbf{X}\mathbf{\beta}\right) - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\beta}\right)
 \end{split}\end{equation}$$
 
-Since, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \Theta \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$.
+Since, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \Gamma)$.
 
 $$\begin{equation}
 \begin{split}
-p\hat{\sigma}_\beta^2 &=\mathbb{E}[\|\mathbf{\beta}\|^2|\mathbf{y}, \Theta] = \text{tr}\left(\mathbb{V}[\mathbf{\beta}|\mathbf{y}, \Theta]\right) +\mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta]^T \mathbb{E}[\mathbf{\beta}|\mathbf{y}, \Theta] = \text{tr}(\Gamma) + \mathbf{\mu}^T\mathbf{\mu},\\
-n\hat{\sigma}_e^2 &= \mathbb{E}[\|\mathbf{y}-\mathbf{Z}\mathbf{\omega}-\mathbf{X}\mathbf{\beta}\|^2|\mathbf{y}, \Theta]\\
+p\hat{\sigma}_\beta^2 &=\mathbb{E}[\|\mathbf{\beta}\|^2|\mathbf{y}, \mathbf{\Theta}] = \text{tr}\left(\mathbb{V}[\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}]\right) +\mathbb{E}[\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}]^T \mathbb{E}[\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}] = \text{tr}(\Gamma) + \|\mathbf{\mu}\|^2,\\
+n\hat{\sigma}_e^2 &= \mathbb{E}[\|\mathbf{y}-\mathbf{Z}\mathbf{\omega}-\mathbf{X}\mathbf{\beta}\|^2|\mathbf{y}, \mathbf{\Theta}]\\
 &= \|\mathbf{y}-\mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}\left(\Gamma \mathbf{X}^T\mathbf{X}\right)+ \mathbf{\mu}^T\mathbf{X}^T\mathbf{X}\mathbf{\mu} - 2(\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu}
 \end{split}\end{equation}$$
 
 Note that $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\Gamma \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu})$.
 
 ### Complete Data Log-Likelihood
+The complete data log-likelihood is given by
+$$\begin{equation}
+\begin{split}
+\ell_c(\mathbf{\Theta}) &= \log p(\mathbf{y}, \mathbf{\beta}, \mathbf{\Theta})\\
+&= -\frac{n}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^2 - \frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2\\
+&\quad -\frac{p}{2} \log (2\pi) -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
+\end{split}\end{equation}$$
+
+-------------
+
 Since
 $$\begin{equation} \mathbf{y}|\mathbf{\Theta}\sim \mathcal{N}(\mathbf{Z}\mathbf{\omega} + \mathbf{X}\mathbf{\beta}, \mathbf{\Sigma})\end{equation}$$
 where $\mathbf{\Sigma} = \mathbf{\sigma}_\beta^2 \mathbf{X}\mathbf{X}^T + \mathbf{\sigma}_e^2 \mathbf{I}_n$, the  complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\Theta|\mathbf{y}) &= \log p(\mathbf{y}, \Theta)\\
+\ell_c(\Theta|\mathbf{y}) &= \log p(\mathbf{\Theta}|\mathbf{y})\\
+&= \log f_\mathbf{y}(\mathbf{y}|\mathbf{\Theta})\\
 &= -\frac{n}{2} \log (2\pi) -\frac{1}{2} \log |\mathbf{\Sigma}| - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T \mathbf{\Sigma}^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})
 \end{split}\end{equation}$$
 
@@ -116,8 +127,8 @@ $$\begin{equation}
 The E-step is to compute the expectation of the complete data log-likelihood with respect to the conditional distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\Theta^{(t)} $:
 $$\begin{equation}
 \begin{split}
-Q(\Theta|\Theta^{(t)}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ \log p(\mathbf{y}, \mathbf{\beta}| \Theta) \right] \\
-&= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{(t)}} \left[ \log p(\mathbf{y}| \mathbf{\beta}, \Theta) + \log p(\mathbf{\beta}| \Theta) \right]
+Q(\Theta| \mathbf{\Theta}^{(t)}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}^{(t)}} \left[ \log p(\mathbf{y}, \mathbf{\beta}| \Theta) \right] \\
+&= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}^{(t)}} \left[ \log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) + \log p(\mathbf{\beta}| \Theta) \right]
 \end{split}\end{equation}$$
 
 Thus, the E-step is to compute the following expectations:
@@ -153,7 +164,7 @@ where $\mathbf{\Sigma} = \sigma_\mathbf{\beta}^2 \mathbf{X}\mathbf{X}^T + \sigma
 The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. The algorithm is summarized as follows:
 1. Initialize $\mathbf{\Theta}^{(0)}$ and $\mathbf{\beta}$ randomly.
 2. For $t = 0, 1, \dots$, MAX_ITERATION:
-   1. E-step: Estimate $\hat{\mathbf{\beta}}^{(t)}$ and $\hat{\mathbf{e}}^{(t)}$.
+   1. E-step: Estimate $\hat{\mathbf{\beta}}^{(t)}$.
    2. M-step: Estimate $\hat{\mathbf{\Theta}}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
    3. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
 3. Return results.

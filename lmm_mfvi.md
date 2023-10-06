@@ -61,32 +61,20 @@ which is a weighted average of the MLE solve of $\mathbf{y}-\mathbf{Z}\mathbf{\o
 ## Calculation of ELBO
 To calculate the ELBO, we need to compute the expected log joint probability of the data and the model parameters under the variational distribution, i.e.,
 
-$$ \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\Theta})] = \int \log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\Theta}) q(\mathbf{\beta}) d\mathbf{\beta} $$
+$$\mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\Theta})] = \int \log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\Theta}) q(\mathbf{\beta}) d\mathbf{\beta} $$
 
-This integral is generally intractable, so we use Monte Carlo integration to approximate it. Specifically, we draw $S$ samples $\mathbf{\beta}^{(s)}$ from the variational distribution, and estimate the integral as
-
-$$ \frac{1}{S} \sum_{s=1}^S \log p(\mathbf{y}, \mathbf{\beta}^{(s)}|\mathbf{\Theta}) $$
-
-To compute this estimate, we need to evaluate the likelihood function $p(\mathbf{y}|\mathbf{X}, \mathbf{\beta}^{(s)}, \mathbf{\Theta})$ and the prior distribution $p(\mathbf{\beta}^{(s)}|\mathbf{\Theta})$ for each sample $\mathbf{\beta}^{(s)}$.
-
-Finally, we need to compute the entropy of the variational distribution, i.e.,
-
-$$ \mathbb{H}[q(\mathbf{\beta})] = -\int q(\mathbf{\beta}) \log q(\mathbf{\beta}) d\mathbf{\beta} = \frac{p}{2} (1 + \log(2\pi)) + \frac{\sigma_\beta^2}{2}$$
-
-The ELBO is then given by the sum of the expected log joint probability and the negative entropy of the variational distribution, i.e.,
-
-$$ \mathcal{L}(\mathbf{\mu}) = \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\theta})] - \mathbb{H}[q(\mathbf{\beta})] $$
+Since $\mathbf{\beta} \sim \mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma})$ and 
 
 ## EM Algorithm with MFVI
 Using the following algorithm to estimate $\mathbb{E}(\mathbf{\beta})$ in the 
 
 1. Initialize $\Theta^{(0)}$ and $\mathbf{\mu}^{(0)}$ randomly.
 2. For $t = 0, 1, \dots$, MAX_ITERATION:
-   1. E-step: Estimate $\hat{\mathbf{\beta}}^{(t)}$:For $t=1,2,\dots$:
-      $\qquad$ Update $\mathbf{\mu}^{(t)}$.
-    2. M-step: Estimate $\hat{\Theta}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
-3. Compute $\text{ELBO}(\mathbf{\mu}) = \mathbb{E}\left[\log p(\mathbf{y}, \mathbf{\beta})\right] - \mathbb{E}\left[\log q(\mathbf{\beta})\right]$. 
-4. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
+   1. E-step: Estimate $\hat{\mathbf{\beta}}^{(t)}$.
+   2. M-step: Estimate $\hat{\Theta}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
+   3. Compute $\text{ELBO}$ and $\Delta \ell_c$. 
+   4. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
+3. Return results.
 
 ## Code and Results
 The following results are obtained by running the EM + MFVI algorithm on the given dataset.
