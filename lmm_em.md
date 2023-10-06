@@ -108,7 +108,7 @@ Note that $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] =
 The complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\mathbf{\Theta}) &= \log p(\mathbf{y}, \mathbf{\beta}, \mathbf{\Theta})\\
+\ell_c(\mathbf{\Theta}) &= \log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})\\
 &= -\frac{n}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^2 - \frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2\\
 &\quad -\frac{p}{2} \log (2\pi) -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
 \end{split}\end{equation}$$
