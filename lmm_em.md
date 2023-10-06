@@ -24,7 +24,10 @@ $$\begin{equation}
 where $\mathbf{\omega} \in \mathbb{R}^c$ is the vector of fixed effects, $\mathbf{\beta} \in \mathbb{R}^p$ is the vector of random effects with $\mathbf{\beta} \sim \mathcal{N}(\mathbf{0}, \sigma^2_\mathbf{\beta} \mathbf{I}_p)$, and $\mathbf{e} \sim \mathcal{N}(\mathbf{0}, \sigma^2_e \mathbf{I}_n)$ is the independent noise term. 
 
 Let $\mathbf{\Theta}$ denote the set of unknown parameters $\mathbf{\Theta} = \{\mathbf{\omega}, \sigma^2_\mathbf{\beta}, \sigma^2_e\}$. Under the framework of EM algorithm, we can treat $\mathbf{\beta}$ as a latent variable. Below is the directed acyclic graph below for our model.
-![DAG](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp)
+
+<p align="center" width="100%">
+    <img width="40%" src="https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp">
+</p>
 
 In the following sections, we will first find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\hat{\mathbf{\Theta}}$ in the E-step. Then we will assume that $\mathbf{\beta}$ has been estimated by $\hat{\mathbf{\beta}}$ and find the ML estimator of $\mathbf{\Theta}$ which is used in M-step. The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. Finally, we will calculate and track the complete data log-likelihood $\ell_c(\mathbf{\Theta})$ to check the convergence of the algorithm.
 
