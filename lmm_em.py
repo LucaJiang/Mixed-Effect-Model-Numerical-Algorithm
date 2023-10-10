@@ -3,19 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import time
+
 sns.set_style('whitegrid')
-
-
-def logdet_inv(A):
-    # Return log determinant and inverse of matrix A
-    eigvals, eigvecs = np.linalg.eigh(A)
-    # Compute log determinant of A from eigenvalues
-    log_det = np.sum(np.log(eigvals))
-    # Compute inverse of eigenvalues
-    inv_eigvals = 1 / eigvals
-    # Compute inverse of A from eigenvalues and eigenvectors
-    inv_A = np.dot(eigvecs, np.dot(np.diag(inv_eigvals), eigvecs.T))
-    return log_det, inv_A
 
 
 def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
@@ -25,7 +15,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     X: n x p, random effect
     Z: n x c, fixed effect
     tol: float, tolerance for convergence, default 1e-6
-    max_iter: int, maximum number of iterations, default 10
+    max_iter: int, maximum number of iterations, default 100
     verbose: bool, print information, default True
 
     Output:
@@ -56,7 +46,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     sigma_e^2 = (||y - Z * W||^2 + trace(Gamma * X^T * X) + ||X * mu||^2 - 2 * (y - Z * W)^T * X * mu) / n
     
     likelihood:
-    l = - n / 2 * log(2 * pi) - 1 / 2 * log(|Sigma|) - 1 / 2 * (y - Z * omega - X * beta)^T * Sigma^-1 * (y - Z * omega - X * beta)
+    l = - (n + p) / 2 * log(2 * pi) - n / 2 * log(sigma_e^2) - 1 / 2 * ||y - Z * omega - X * beta||^2 / sigma_e^2 - p / 2 * log(sigma_beta^2) - 1 / 2 * ||beta||^2 / sigma_beta^2
     '''
     n, p = X.shape
     n_, c = Z.shape
@@ -65,25 +55,25 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
 
     # Initialize parameters
     beta = np.random.randn(p, 1)
-    omega = np.random.randn(c, 1)
+    omega = np.random.randn(c, 1) * 1e-2
     sigma_beta2 = 1
-    sigma_e2 = 1
+    sigma_e2 = .1
 
     # for accelerate calculation
-    XXT = X @ X.T
+    # XXT = X @ X.T
     XTX = X.T @ X
     ZTZinvZT = np.linalg.inv(Z.T @ Z) @ Z.T
 
-    # Calculate likelihood
-    def likelihood(omega, Sigma):
-        tmp = y - Z @ omega - X @ beta
-        # Find log-det and inverse with eignvalues
-        Sigma_logdet, Sigma_inv = logdet_inv(Sigma)
-        # Sigma_logdet = np.linalg.slogdet(Sigma)[1]
-        # Sigma_inv = np.linalg.inv(Sigma)
-        likelihood = -n / 2 * np.log(
-            2 * np.pi) - 0.5 * Sigma_logdet - 0.5 * tmp.T @ Sigma_inv @ tmp
-        return likelihood
+    # Gamma
+    eigvals, eigvecs = np.linalg.eigh(XTX)
+    cal_Gamma = lambda: eigvecs @ np.diag(1 / (eigvals / sigma_e2 + 1 / sigma_beta2)) @ eigvecs.T
+
+    # likelihood
+    likelihood_const = -(n + p) / 2 * np.log(2 * np.pi)
+    cal_likelihood = lambda: likelihood_const - n / 2 * np.log(
+        sigma_e2) - 1 / 2 * np.linalg.norm(
+            y - Z @ omega - X @ beta)**2 / sigma_e2 - p / 2 * np.log(
+                sigma_beta2) - 1 / 2 * np.linalg.norm(beta)**2 / sigma_beta2
 
     # Record parameters in each iteration
     max_iter += 1
@@ -95,28 +85,27 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     # Initialize record
     iter = 0
     omega_list[:, iter] = omega.flatten()
-    Sigma = sigma_beta2 * XXT + sigma_e2 * np.eye(n)
-    likelihood_list[iter] = likelihood(omega, Sigma)
+    likelihood_list[iter] = cal_likelihood()
     sigma_beta2_list[iter] = sigma_beta2
     sigma_e2_list[iter] = sigma_e2
 
     # EM algorithm
+    print('EM algorithm starts')
     for iter in range(1, max_iter):
         # E step
-        Gamma = np.linalg.pinv(XTX / sigma_e2 + np.eye(p) / sigma_beta2)
-        mu = Gamma @ X.T @ (y - Z @ omega) / sigma_e2
-        beta = mu
+        Gamma = cal_Gamma()
+        beta = Gamma @ X.T @ (y - Z @ omega) / sigma_e2
         # e = y - Z @ omega - X @ beta
 
         # M step
-        omega = ZTZinvZT @ (y - X @ mu)
-        sigma_beta2 = (np.trace(Gamma) + np.linalg.norm(mu)**2) / p
-        sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 + np.trace(Gamma @ XTX) + np.linalg.norm(X @ mu)**2 - 2 * ((y - Z @ omega).T @ X @ mu)[0, 0]) / n
+        omega = ZTZinvZT @ (y - X @ beta)
+        sigma_beta2 = (np.trace(Gamma) + np.linalg.norm(beta)**2) / p
+        sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 + np.trace(Gamma @ XTX) +
+                    np.linalg.norm(X @ beta)**2 - 2 *
+                    ((y - Z @ omega).T @ X @ beta)[0, 0]) / n
 
-        # Update Sigma
-        Sigma = sigma_beta2 * XXT + sigma_e2 * np.eye(n)
         # Calculate likelihood
-        likelihood_list[iter] = likelihood(omega, Sigma)
+        likelihood_list[iter] = cal_likelihood()
 
         # Record parameters
         omega_list[:, iter] = omega.flatten()
@@ -160,8 +149,11 @@ if __name__ == '__main__':
     X = data[:, 31:]
 
     # run EM algorithm
-    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(
-        y, X, Z)
+    start_time = time.time()
+    # run EM algorithm
+    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z, max_iter=10)
+    end_time = time.time()
+    print('Run time: ', end_time - start_time, 's')
 
     # run EM algorithm with limited data
     # MAX_LENGTH = 200
@@ -171,27 +163,31 @@ if __name__ == '__main__':
 
     # subplot
     fig, axes = plt.subplots(2, 2, figsize=(12, 8))
-    axes[0, 0].plot(likelihood_list)
+    # omit the first point
+    axes[0, 0].plot(range(1, len(likelihood_list)), likelihood_list[1:])
+    axes[0, 0].set_xlabel('Iteration')
     axes[0, 0].set_title('Likelihood')
 
     axes[0, 1].plot(sigma_beta2_list, label=r'$\sigma_\beta^2$')
     axes[0, 1].plot(sigma_e2_list, label=r'$\sigma_e^2$')
+    axes[0, 1].set_xlabel('Iteration')
     axes[0, 1].set_title('Unknown Variance')
     axes[0, 1].legend()
 
     axes[1, 0].plot(omega_list.T)
+    axes[1, 0].set_xlabel('Iteration')
     axes[1, 0].set_title(r'$\omega$')
 
     # hist
     sns.distplot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
     axes[1, 1].axvline(beta_post_mean,
-                       color='r',
-                       linestyle='--',
-                       label=rf'$\beta={beta_post_mean:.4e}$')
+                color='r',
+                linestyle='--',
+                label=rf'$\beta={beta_post_mean:.4e}$')
     axes[1, 1].set_title('Effects')
     axes[1, 1].legend()
 
     plt.suptitle('EM Algorithm for Linear Mixed Model')
     plt.tight_layout()
-    plt.savefig('img/lmm_em' + data_name + '.png')
+    plt.savefig('img/lmm_em'+data_name+'.png')
     plt.show()

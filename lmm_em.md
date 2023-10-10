@@ -125,14 +125,14 @@ $$\begin{equation}
 \end{split}\end{equation}$$
 
 
-When $|\ell_c(\mathbf{\Theta}, \mathbf{\beta}) - \ell_c(\mathbf{\Theta}^{\text{old}}, \mathbf{\beta})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
+When $|\Delta \ell_c| = |\ell_c(\mathbf{\Theta}, \mathbf{\beta}) - \ell_c(\mathbf{\Theta}^{\text{old}}, \mathbf{\beta})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
 
 
 ### The Pseudocode of EM Algorithm
 The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. The algorithm is summarized as follows:
 1. Initialize $\mathbf{\Theta}^{(0)}$ and $\mathbf{\beta}$ randomly.
 2. For $t = 0, 1, \dots$, MAX_ITERATION:
-   1. E-step: Estimate $\hat{\mathbf{\beta}}^{\text{old}}$.
+   1. E-step: Estimate $\mathbf{\beta}$.
    2. M-step: Estimate $\hat{\mathbf{\Theta}}=\{\hat{\mathbf{\omega}}, \hat{\sigma}_\beta^{2}, \hat{\sigma}_e^{2}\}$.
    3. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
 3. Return results.
@@ -141,6 +141,22 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
 ## Codes and Results
 The following results are obtained by running the EM algorithm on the given dataset.
 [Link to code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result)
+
+Calculation details:
+Since $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$, we need to calculate the inverse of $\mathbf{X}^T \mathbf{X}$ and $\mathbf{I}_p$ in each iteration. When $p$ is large and the elements of $\mathbf{X}$ are small, the inverse of $\mathbf{X}^T \mathbf{X}$ may be ill-conditioned. Therefore, we use the eigenvalue decomposition of $\mathbf{X}^T \mathbf{X}$ to accelerate the calculation of $\mathbf{\Gamma}$.
+
+Let $\mathbf{X}^T \mathbf{X} = \mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T$, where $\mathbf{Q}$ is an orthogonal matrix and $\mathbf{\Lambda}$ is a diagonal matrix with the eigenvalues of $\mathbf{X}^T \mathbf{X}$ on the diagonal. Then we have
+$$\begin{equation}
+\begin{split}
+\mathbf{\Gamma} &= \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}\\
+&= \left(\frac{\mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}\\
+&= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1} \mathbf{Q}^T
+\end{split}\end{equation}$$
+
+where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ is a diagonal matrix which is easy to calculate the inverse.
+
+When calculating the eigenvalue decomposition of $\mathbf{\Gamma}$, it's better to use 'numpy.linalg.eigh' instead of 'numpy.linalg.eig' since $\mathbf{\Gamma}$ is a real symmetric matrix. The former is faster and more accurate than the latter.
+
 
 <!-- Calculation details:
 - $\log |\mathbf{\Sigma}|$: Directly calculate the log determinant of $\mathbf{\Sigma}$ would cause numerical overflow:
