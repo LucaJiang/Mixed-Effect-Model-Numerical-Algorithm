@@ -8,13 +8,16 @@ The OLM (Ordinary Linear Model) assumes that the observations are independent an
 $$\begin{equation}
 \mathbf{y} = \mathbf{X}\mathbf{\gamma} + \mathbf{e},
 \end{equation}$$
-where $\mathbf{y} \in \mathbb{R}^n$ is the vector of response variable, $\mathbf{X} \in \mathbb{R}^{n \times p}$ is the matrix of $p$ independent variables, $\mathbf{\gamma} \in \mathbb{R}^p$ is the vector of coefficients, and $\mathbf{e} \sim \mathcal{N}(\mathbf{0}, \sigma^2_e \mathbf{I}_n)$ is the independent noise term. 
+where $\mathbf{y} \in \mathbb{R}^n$ is the vector of response variable, $\mathbf{X} \in \mathbb{R}^{n \times p}$ is the matrix of $p$ independent variables, $\mathbf{\gamma} \in \mathbb{R}^p$ is the vector of coefficients, and $\mathbf{e} \sim \mathcal{N}(\mathbf{0}, \sigma^2_e \mathbf{I}_n)$ is the independent noise term.
 
-Let's assume $\mathbf{\gamma}$ can be break down into a fixed effect part $\mathbf{\omega}$ and a random effect part $\mathbf{\beta}\sim \mathcal{N}(\mathbf{0}, \sigma^2_\mathbf{\beta} \mathbf{I}_p)$, i.e., $\mathbf{\gamma} = \mathbf{\omega} + \mathbf{\beta}$. Then, for an individual $i$, we have
+In the OLM, if we want to obtain the coefficients $\mathbf{\gamma}$, we can use the least square method to minimize the loss function. However, when $n<p$, the matrix $\mathbf{X}$ is not full rank, and the least square method could lead to overfitting. Because we have $p+1$ (including $\sigma_e^2$) parameters to estimate, but only $n$ observations. 
+
+Let's assume the design matrix $\mathbf{X}$ can be decomposed into two parts, i.e., $\mathbf{X} = [\mathbf{X}_1, \mathbf{X}_2]$, where $\mathbf{X}_1 \in \mathbb{R}^{n \times p_1}, p_1 < n\ll p$ and $\mathbf{X}_2 \in \mathbb{R}^{n \times p_2}$. And, $\mathbf{\gamma}$ can be break down into a fixed effect part $\mathbf{\omega}\in \mathbb{R}^{p_1}$ and a random effect part $\mathbf{\beta}\in \mathbb{R}^{p_1}$ the distribution of which is $\mathcal{N}(\mathbf{0}, \sigma^2_\mathbf{\beta} \mathbf{I}_{p_2})$, i.e., $\mathbf{\gamma}^T = [\mathbf{\omega}^T, \mathbf{\beta}^T]$. Then, we have
 $$\begin{equation}
-y_i = \mathbf{x}_i^T\mathbf{\omega} + \mathbf{x}_i^T\mathbf{\beta}_i + e_i
+\mathbf{y} = \mathbf{X}_1\mathbf{\omega} + \mathbf{X}_2\mathbf{\beta} + \mathbf{e}
 \end{equation}$$
-Thus, we obtain the LMM (Linear Mixed-Effect Model), which relaxes the assumption of i.i.d.
+Thus, we obtain the LMM (Linear Mixed-Effect Model). In this case, the number of parameters to estimate is $p_1 + 1 + 1$ (including $\sigma_\beta^2$ and $\sigma_e^2$), which is much smaller than $p+1$ in the OLM.
+
 
 ## Model Description
 LMM is a statistical model that accounts for both fixed effects and random effects in a linear regression model. It is used for modeling data where observations are not independent or identically distributed.
