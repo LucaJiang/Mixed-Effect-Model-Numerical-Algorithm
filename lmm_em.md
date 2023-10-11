@@ -150,7 +150,7 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
 ## Codes and Results
 
 The results below are obtained by running the EM algorithm on a generated dataset.
-![Result on generated dataset](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result/lmm_emfake_data.png)
+![Result on generated dataset](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/lmm_emfake_data.png)
 
 The results in [code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result) are obtained by running the EM algorithm on a given dataset.
 
