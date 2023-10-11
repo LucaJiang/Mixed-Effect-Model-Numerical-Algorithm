@@ -166,7 +166,7 @@ if __name__ == '__main__':
     # omit the first point
     axes[0, 0].plot(range(1, len(likelihood_list)), likelihood_list[1:])
     axes[0, 0].set_xlabel('Iteration')
-    axes[0, 0].set_title('Likelihood')
+    axes[0, 0].set_title('Log Likelihood')
 
     axes[0, 1].plot(sigma_beta2_list, label=r'$\sigma_\beta^2$')
     axes[0, 1].plot(sigma_e2_list, label=r'$\sigma_e^2$')

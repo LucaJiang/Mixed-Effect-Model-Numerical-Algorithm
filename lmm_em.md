@@ -24,9 +24,9 @@ where $\mathbf{\omega} \in \mathbb{R}^c$ is the vector of fixed effects, $\mathb
 
 Let $\mathbf{\Theta}$ denote the set of unknown parameters $\mathbf{\Theta} = \{\mathbf{\omega}, \sigma^2_\mathbf{\beta}, \sigma^2_e\}$. Under the framework of EM algorithm, we can treat $\mathbf{\beta}$ as a latent variable. Below is the directed acyclic graph below for our model.
 
-<p width="100%">
+<p width="80%">
 <figure align="center"  class="image">
-  <img width="50%" src="https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp" alt="Directed acyclic graph">
+  <img width="40%" src="https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp" alt="Directed acyclic graph">
   <figcaption style="text-align: left;">Figure 1. The directed acyclic graph for the linear mixed-effect model. The shaded nodes are observed variables and the unshaded nodes are latent variables. The arrows indicate the conditional dependencies. 
   The points indicate the parameters.
   The plate indicates that the variables inside the plate are replicated n times.
