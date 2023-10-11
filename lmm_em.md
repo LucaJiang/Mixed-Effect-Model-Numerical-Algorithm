@@ -5,9 +5,10 @@
     - [Complete Data Log-Likelihood](#complete-data-log-likelihood)
     - [Statistical Inference in E-Step](#statistical-inference-in-e-step)
     - [Statistical Inference in M-Step](#statistical-inference-in-m-step)
-  - [EM Algorithm](#em-algorithm)
+  - [The EM Algorithm](#the-em-algorithm)
     - [The Pseudocode of EM Algorithm](#the-pseudocode-of-em-algorithm)
   - [Codes and Results](#codes-and-results)
+  - [TODO: Acceleration:](#todo-acceleration)
   - [References](#references)
 
 ## Model Description
@@ -23,11 +24,17 @@ where $\mathbf{\omega} \in \mathbb{R}^c$ is the vector of fixed effects, $\mathb
 
 Let $\mathbf{\Theta}$ denote the set of unknown parameters $\mathbf{\Theta} = \{\mathbf{\omega}, \sigma^2_\mathbf{\beta}, \sigma^2_e\}$. Under the framework of EM algorithm, we can treat $\mathbf{\beta}$ as a latent variable. Below is the directed acyclic graph below for our model.
 
-<p align="center" width="100%">
-    <img width="40%" src="https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp">
+<p width="100%">
+<figure align="center"  class="image">
+  <img width="50%" src="https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/dag.bmp" alt="Directed acyclic graph">
+  <figcaption style="text-align: left;">Figure 1. The directed acyclic graph for the linear mixed-effect model. The shaded nodes are observed variables and the unshaded nodes are latent variables. The arrows indicate the conditional dependencies. 
+  The points indicate the parameters.
+  The plate indicates that the variables inside the plate are replicated n times.
+  </figcaption>
+</figure>
 </p>
 
-In the following sections, we will first find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\hat{\mathbf{\Theta}}$ in the E-step. Then we will assume that $\mathbf{\beta}$ has been estimated by $\hat{\mathbf{\beta}}$ and find the ML estimator of $\mathbf{\Theta}$ which is used in M-step. The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. Finally, we will calculate and track the complete data log-likelihood $\ell_c(\mathbf{\Theta})$ to check the convergence of the algorithm.
+The EM algorithm is an iterative algorithm that alternates between the E-step and the M-step until convergence. In the following sections, we will first find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\hat{\mathbf{\Theta}}$ in the E-step and calculate the $Q$ function. Then we will  find the ML estimator of $\mathbf{\Theta}$ which is used in M-step.  Finally, we will calculate and track the complete data log-likelihood $\ell(\mathbf{\Theta})$ to check the convergence of the algorithm.
 
 
 ## Statistical Inference in LMM
@@ -39,7 +46,7 @@ In the following sections, we will first find the posterior distribution of $\ma
 The complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\mathbf{\Theta}, \mathbf{\beta}) &= \log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})\\
+\ell(\mathbf{\Theta}, \mathbf{\beta}) &= \log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})\\
 &= \log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) + \log p(\mathbf{\beta}| \mathbf{\Theta})\\
 &= -\frac{n}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^2 - \frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2\\
 &\quad -\frac{p}{2} \log (2\pi) -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
@@ -65,7 +72,9 @@ p(\mathbf{\beta}| \mathbf{y}, \mathbf{\Theta})
 &\propto \exp \left\{-\frac{1}{2}\left( \mathbf{\beta} - \mathbf{\mu}\right)^T \mathbf{\Gamma}^{-1} \left( \mathbf{\beta} - \mathbf{\mu}\right) \right\}
 \end{split}\end{equation}$$
 
-where $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma})$.
+where $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ and $\mathbf{\mu} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma})$. [^Notes]
+
+[^Notes]: Notes on the derivation of the posterior distribution of $\mathbf{\beta}$: Let $g(\mathbf{\beta})= -\frac{1}{2}(\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) -\frac{1}{2} \mathbf{\beta}^T (\sigma_\mathbf{\beta}^2 \mathbf{I}_p)^{-1} \mathbf{\beta}$. Then we have $\nabla g(\mathbf{\beta}) = \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})/\sigma_e^2 - \mathbf{\beta}/\sigma_\mathbf{\beta}^2$. Let $\nabla g(\mathbf{\beta}) = 0$, we have $\mathbf{\beta} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega})/\sigma_e^2$, where $g(\mathbf{\beta})$ is maximized. Thus, we find the $\mathbf{\mu}$. To obtain the variance of $\mathbf{\beta}$, we need to calculate the Hessian matrix of $g(\mathbf{\beta})$ and evaluate it at $\mathbf{\beta} = \mathbf{\mu}$. The Hessian matrix is given by $\nabla^2 g(\mathbf{\beta}) = \mathbf{X}^T \mathbf{X}/\sigma_e^2 + \mathbf{I}_p/\sigma_\mathbf{\beta}^2$. Therefore, the variance of $\mathbf{\beta}$ is $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$.
 
 Thus, we have
 $$\begin{equation}
@@ -79,7 +88,7 @@ Q(\Theta|\Theta^{\text{old}}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{
 &\quad -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \text{tr}(\mathbf{\Gamma}) - \frac{1}{2\sigma_\beta^2} \mathbf{\mu}^{T} \mathbf{\mu}
 \end{split}\end{equation}$$
 
-Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu})$.
+Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
 
 ### Statistical Inference in M-Step
 M-step is to maximize the $Q$ function with respect to $\mathbf{\Theta}$, which  is equivalent to set the partial derivatives of $Q$ with respect to $\mathbf{\Theta}$ to zero. Thus, we have
@@ -95,7 +104,7 @@ $$\begin{equation}
 \end{split}\end{equation}$$
 
 
-## EM Algorithm
+## The EM Algorithm
 The E-step is to compute the following expectations:
 
 $$\begin{equation}
@@ -118,14 +127,14 @@ $$\begin{equation}
 Then the complete data log-likelihood is given by
 $$\begin{equation}
 \begin{split}
-\ell_c(\mathbf{\Theta}, \mathbf{\beta}) &= \log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})\\
+\ell(\mathbf{\Theta}, \mathbf{\beta}) &= \log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})\\
 &= \log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) + \log p(\mathbf{\beta}| \mathbf{\Theta})\\
 &= -\frac{n+p}{2} \log (2\pi) -\frac{n}{2} \log \hat{\sigma}_e^2\\
 &\quad  - \frac{1}{2\hat{\sigma}_e^2} \|\mathbf{y} - \mathbf{Z}\hat{\mathbf{\omega}} - \mathbf{X}\mathbf{\beta}\|^2-\frac{p}{2} \log \hat{\sigma}_\beta^2 - \frac{1}{2\hat{\sigma}_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
 \end{split}\end{equation}$$
 
 
-When $|\Delta \ell_c| = |\ell_c(\mathbf{\Theta}, \mathbf{\beta}) - \ell_c(\mathbf{\Theta}^{\text{old}}, \mathbf{\beta})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
+When $|\Delta \ell| = |\ell(\mathbf{\Theta}, \mathbf{\beta}) - \ell(\mathbf{\Theta}^{\text{old}}, \mathbf{\beta})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
 
 
 ### The Pseudocode of EM Algorithm
@@ -134,16 +143,20 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
 2. For $t = 0, 1, \dots$, MAX_ITERATION:
    1. E-step: Estimate $\mathbf{\beta}$.
    2. M-step: Estimate $\hat{\mathbf{\Theta}}=\{\hat{\mathbf{\omega}}, \hat{\sigma}_\beta^{2}, \hat{\sigma}_e^{2}\}$.
-   3. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
+   3. Check $|\Delta \ell|$ for convergence. If converged, stop. Otherwise, continue.
 3. Return results.
 
 
 ## Codes and Results
-The following results are obtained by running the EM algorithm on the given dataset.
-[Link to code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result)
+
+The results below are obtained by running the EM algorithm on a generated dataset.
+![Result on generated dataset](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result/lmm_emfake_data.png)
+
+The results in [code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result) are obtained by running the EM algorithm on a given dataset.
+
 
 Calculation details:
-Since $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$, we need to calculate the inverse of $\mathbf{X}^T \mathbf{X}$ and $\mathbf{I}_p$ in each iteration. When $p$ is large and the elements of $\mathbf{X}$ are small, the inverse of $\mathbf{X}^T \mathbf{X}$ may be ill-conditioned. Therefore, we use the eigenvalue decomposition of $\mathbf{X}^T \mathbf{X}$ to accelerate the calculation of $\mathbf{\Gamma}$.
+Since $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$, we need to calculate this inverse in each iteration. When $p$ is large and the elements of $\mathbf{X}$ are small, the inverse of $\mathbf{X}^T \mathbf{X}$ may be ill-conditioned. Therefore, we use the eigenvalue decomposition of $\mathbf{X}^T \mathbf{X}$ to accelerate the calculation of $\mathbf{\Gamma}$.
 
 Let $\mathbf{X}^T \mathbf{X} = \mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T$, where $\mathbf{Q}$ is an orthogonal matrix and $\mathbf{\Lambda}$ is a diagonal matrix with the eigenvalues of $\mathbf{X}^T \mathbf{X}$ on the diagonal. Then we have
 $$\begin{equation}
@@ -155,17 +168,12 @@ $$\begin{equation}
 
 where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ is a diagonal matrix which is easy to calculate the inverse.
 
-When calculating the eigenvalue decomposition of $\mathbf{\Gamma}$, it's better to use 'numpy.linalg.eigh' instead of 'numpy.linalg.eig' since $\mathbf{\Gamma}$ is a real symmetric matrix. The former is faster and more accurate than the latter.
+When calculating the eigenvalue decomposition of $\mathbf{\Gamma}$, it's better to use '[numpy.linalg.eigh](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eigh.html)' instead of '[numpy.linalg.eig](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eig.html)' since $\mathbf{\Gamma}$ is a real symmetric matrix. The former is faster and more accurate than the latter.
 
 
-<!-- Calculation details:
-- $\log |\mathbf{\Sigma}|$: Directly calculate the log determinant of $\mathbf{\Sigma}$ would cause numerical overflow:
-```python
-RuntimeWarning: overflow encountered in reduce return ufunc.reduce(obj, axis, dtype, out, **passkwargs)
-```
-That's because "If an array has a very small or very large determinant, then a call to `det` may overflow or underflow". When the dimension of $\mathbf{\Sigma}$ is large, $|\mathbf{\Sigma}|$ would be extremely close to zero so that it may be considered as zero by numpy. Therefore, we use $\log |\mathbf{\Sigma}| = \sum_{i=1}^n \log \lambda_i$, where $\lambda_i$ is the $i$-th eigenvalue of $\mathbf{\Sigma}$.
-
-Alternative methods: np.linalg.slogdet apply LU factorization to calculate the log determinant of a matrix [doc](https://numpy.org/doc/stable/reference/generated/numpy.linalg.slogdet.html). -->
+## TODO: Acceleration:
+1. Aitken acceleration
+2. numba
 
 ## References
 1. An EM Algorithm for Linear Mixed Effects Models. [MAP566](https://jchiquet.github.io/MAP566/docs/mixed-models/map566-lecture-EM-linear-mixed-model.html)

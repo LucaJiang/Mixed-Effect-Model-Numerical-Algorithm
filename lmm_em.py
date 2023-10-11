@@ -15,7 +15,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     X: n x p, random effect
     Z: n x c, fixed effect
     tol: float, tolerance for convergence, default 1e-6
-    max_iter: int, maximum number of iterations, default 100
+    max_iter: int, maximum number of iterations, default 10
     verbose: bool, print information, default True
 
     Output:
@@ -38,7 +38,6 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     Gamma = (X^T * X / sigma_e^2 + I_p / sigma_beta^2)^-1
     mu = Gamma * X^T * (y - Z * omega) / sigma_e^2
     beta = mu
-    # e = y - Z * omega - X * beta
 
     M-step:
     omega = (Z^T * Z)^-1 * Z^T * (y - X * mu)
@@ -95,7 +94,6 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
         # E step
         Gamma = cal_Gamma()
         beta = Gamma @ X.T @ (y - Z @ omega) / sigma_e2
-        # e = y - Z @ omega - X @ beta
 
         # M step
         omega = ZTZinvZT @ (y - X @ beta)
@@ -115,11 +113,14 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
         # Check convergence
         if np.abs(likelihood_list[iter] - likelihood_list[iter - 1]) < tol:
             break
+
+        # Print process information
         if verbose and iter % 5 == 0:
             print('iter: {}, likelihood: {:.4e}'.format(
                 iter, likelihood_list[iter]))
+    
     beta_post_mean = np.mean(beta)
-    resident = np.linalg.norm(y - Z @ omega - X @ beta) / n
+    resident = np.linalg.norm(y - Z @ omega - X @ beta)**2 / n
 
     if iter == max_iter - 1:
         print(
@@ -141,8 +142,7 @@ if __name__ == '__main__':
     # load data
     data_name = 'fake_data'
     # data_name = 'XYZ_MoM'
-    data = pd.read_table('data/' + data_name + '.txt', sep='\t',
-                         header=0).values
+    data = pd.read_table('data/' + data_name + '.txt', sep='\t', header=0).values
 
     y = data[:, 0].reshape(-1, 1)
     Z = data[:, 1:31]
@@ -151,9 +151,9 @@ if __name__ == '__main__':
     # run EM algorithm
     start_time = time.time()
     # run EM algorithm
-    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z, max_iter=10)
+    likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(y, X, Z, max_iter=30)
     end_time = time.time()
-    print('Run time: ', end_time - start_time, 's')
+    print('Run time: %d min %.2f s' % ((end_time - start_time) // 60, (end_time - start_time) % 60))
 
     # run EM algorithm with limited data
     # MAX_LENGTH = 200
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     axes[1, 1].axvline(beta_post_mean,
                 color='r',
                 linestyle='--',
-                label=rf'$\beta={beta_post_mean:.4e}$')
+                label=rf'$\beta={beta_post_mean:.2e}$')
     axes[1, 1].set_title('Effects')
     axes[1, 1].legend()
 
