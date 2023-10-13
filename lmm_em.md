@@ -7,7 +7,12 @@
     - [Statistical Inference in M-Step](#statistical-inference-in-m-step)
   - [The EM Algorithm](#the-em-algorithm)
     - [The Pseudocode of EM Algorithm](#the-pseudocode-of-em-algorithm)
+  - [Calculation details:](#calculation-details)
+      - [Woodbury matrix identity](#woodbury-matrix-identity)
+      - [Eigenvalue decomposition](#eigenvalue-decomposition)
   - [Codes and Results](#codes-and-results)
+    - [Codes](#codes)
+    - [Results](#results)
   - [TODO: Acceleration:](#todo-acceleration)
   - [References](#references)
 
@@ -59,7 +64,7 @@ The E-step is to compute the expectation of the complete data log-likelihood wit
 $$\begin{equation}
 \begin{split}
 Q(\Theta|\Theta^{\text{old}}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{\text{old}}} \left[ \log p(\mathbf{y}, \mathbf{\beta}|\Theta) \right]
-\end{split}\end{equation}.$$
+\end{split}\end{equation}$$
 
 Therefore, we need to find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\mathbf{\Theta}$. However the posterior distribution of $\mathbf{\beta}$ can not be obtained directly. Instead, by applying Bayes' rule, we have
 $$\begin{equation}
@@ -133,6 +138,15 @@ $$\begin{equation}
 &\quad  - \frac{1}{2\hat{\sigma}_e^2} \|\mathbf{y} - \mathbf{Z}\hat{\mathbf{\omega}} - \mathbf{X}\mathbf{\beta}\|^2-\frac{p}{2} \log \hat{\sigma}_\beta^2 - \frac{1}{2\hat{\sigma}_\beta^2} \mathbf{\beta}^T \mathbf{\beta}
 \end{split}\end{equation}$$
 
+------
+Let $\Sigma = \sigma_\mathbf{\beta}^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n$ be the covariance matrix of $\mathbf{y}$, then the conditional distribution of $\mathbf{y}|\Theta$ is $\mathcal{N}(\mathbf{Z}\mathbf{\omega} + \mathbf{X}\mathbf{\beta}, \Sigma)$. The complete data log-likelihood is given by
+$$\begin{equation}
+\begin{split}
+\log p(\mathbf{y}| \Theta) &= -\frac{n}{2} \log(2\pi)-\frac{1}{2} \log |\Sigma|\\
+&\quad - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}-\mathbf{X}\mathbf{\beta})^T \Sigma^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}-\mathbf{X}\mathbf{\beta})
+\end{split}\end{equation}$$
+
+------
 
 When $|\Delta \ell| = |\ell(\mathbf{\Theta}, \mathbf{\beta}) - \ell(\mathbf{\Theta}^{\text{old}}, \mathbf{\beta})| < \varepsilon$, where $\varepsilon$ is a small number, the algorithm is considered to be converged.
 
@@ -147,33 +161,66 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
 3. Return results.
 
 
-## Codes and Results
+## Calculation details:
 
+#### Woodbury matrix identity
+We can use the Woodbury matrix identity to simplify the calculation of $\mathbf{\Gamma}$:
+
+$$\begin{equation}
+\begin{split}
+ \left(\mathbf{A} + \mathbf{U} \mathbf{C} \mathbf{V}\right)^{-1} &= \mathbf{A}^{-1} - \mathbf{A}^{-1} \mathbf{U} \left(\mathbf{C}^{-1} + \mathbf{V} \mathbf{A}^{-1} \mathbf{U}\right)^{-1} \mathbf{V} \mathbf{A}^{-1}\\
+\Rightarrow  \left(\mathbf{I}+\mathbf{UV}\right)^{-1} \mathbf{U} &= \mathbf{U} \left(\mathbf{I} + \mathbf{VU}\right)^{-1} \text{\small (push-through identity)}
+\end{split}\end{equation}$$
+
+Therefore, we have
+$$\begin{equation}
+\tilde{\mathbf{\Gamma}} = \left(\frac{\mathbf{X} \mathbf{X}^T}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\mathbf{\beta}^2} \right)^{-1} 
+\end{equation}$$
+
+Since $\mathbf{X}\mathbf{X}^T$ is a $n \times n$ matrix and $\mathbf{X}^T\mathbf{X}$ is a $p \times p$ matrix, when $n \ll p$, it's easier to calculate the inverse of the former.
+
+At the same time, the update formulas are given by
+$$\begin{equation}
+\begin{split}
+\tilde{\mathbf{\mu}} &=  \mathbf{X}^T \tilde{\mathbf{\Gamma}} (\mathbf{y}-\mathbf{Z}\mathbf{\omega}) /\sigma_e^2\\
+\hat{\mathbf{\omega}} &= (\mathbf{Z}^T \mathbf{Z})^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\tilde{\mathbf{\mu}})\\
+\hat{\mathbf{\sigma}}_\beta^{2} &= \frac{1}{p} \left(\text{tr}(\tilde{\mathbf{\Gamma}}) + \|\tilde{\mathbf{\mu}}\|^2 \right)\\
+\hat{\mathbf{\sigma}}_e^{2} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}\|^2 + \text{tr}\left(\mathbf{X}\mathbf{X}^T\tilde{\mathbf{\Gamma}}\right)+ \|\mathbf{X}\tilde{\mathbf{\mu}} \|^2 - 2(\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}})^T \mathbf{X}\tilde{\mathbf{\mu}}\right)
+\end{split}\end{equation}$$
+
+
+#### Eigenvalue decomposition
+Since we need to calculate the inverse in $\mathbf{\Gamma}$ each iteration. When $p$ is large and the elements of $\mathbf{X}$ are small, the inverse of $\mathbf{X} \mathbf{X}^T$ may be ill-conditioned. Therefore, we use the eigenvalue decomposition of $\mathbf{X} \mathbf{X}^T$ to accelerate the calculation of $\mathbf{\Gamma}$.
+
+Let $\mathbf{X} \mathbf{X}^T = \mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T$, where $\mathbf{Q}$ is an orthogonal matrix and $\mathbf{\Lambda}$ is a diagonal matrix with the eigenvalues of $\mathbf{X} \mathbf{X}^T$ on the diagonal. Then we have
+$$\begin{equation}
+\tilde{\mathbf{\Gamma}} = \left(\frac{\mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\mathbf{\beta}^2} \right)^{-1}
+= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\mathbf{\beta}^2} \right)^{-1} \mathbf{Q}^T
+\end{equation}$$
+
+where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ is a diagonal matrix which is easy to calculate the inverse.
+
+When calculating the eigenvalue decomposition, it's better to use '[numpy.linalg.eigh](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eigh.html)' instead of '[numpy.linalg.eig](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eig.html)' since $\tilde{\mathbf{\Gamma}}$ is a real symmetric matrix. The former is faster and more accurate than the latter.
+
+
+## Codes and Results
+### Codes
+1. [Generate data](https://github.com/LucaJiang/Mixed-Effect-Model-Numerical-Algorithm/blob/master/generate_data.py).
+2. [Data exploration](https://github.com/LucaJiang/Mixed-Effect-Model-Numerical-Algorithm/blob/master/explore_data.ipynb).
+3. [EM algorithm](https://github.com/LucaJiang/Mixed-Effect-Model-Numerical-Algorithm/blob/master/lmm_em.py).
+
+
+### Results
 The results below are obtained by running the EM algorithm on a generated dataset.
 ![Result on generated dataset](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/lmm_emfake_data.png)
 
 The results in [code](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/em_result) are obtained by running the EM algorithm on a given dataset.
 
 
-Calculation details:
-Since $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$, we need to calculate this inverse in each iteration. When $p$ is large and the elements of $\mathbf{X}$ are small, the inverse of $\mathbf{X}^T \mathbf{X}$ may be ill-conditioned. Therefore, we use the eigenvalue decomposition of $\mathbf{X}^T \mathbf{X}$ to accelerate the calculation of $\mathbf{\Gamma}$.
-
-Let $\mathbf{X}^T \mathbf{X} = \mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T$, where $\mathbf{Q}$ is an orthogonal matrix and $\mathbf{\Lambda}$ is a diagonal matrix with the eigenvalues of $\mathbf{X}^T \mathbf{X}$ on the diagonal. Then we have
-$$\begin{equation}
-\begin{split}
-\mathbf{\Gamma} &= \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}\\
-&= \left(\frac{\mathbf{Q} \mathbf{\Lambda} \mathbf{Q}^T}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}\\
-&= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1} \mathbf{Q}^T
-\end{split}\end{equation}$$
-
-where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\mathbf{\beta}^2} \right)^{-1}$ is a diagonal matrix which is easy to calculate the inverse.
-
-When calculating the eigenvalue decomposition of $\mathbf{\Gamma}$, it's better to use '[numpy.linalg.eigh](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eigh.html)' instead of '[numpy.linalg.eig](https://numpy.org/doc/stable/reference/generated/numpy.linalg.eig.html)' since $\mathbf{\Gamma}$ is a real symmetric matrix. The former is faster and more accurate than the latter.
-
-
 ## TODO: Acceleration:
 1. Aitken acceleration
 2. numba
+
 
 ## References
 1. An EM Algorithm for Linear Mixed Effects Models. [MAP566](https://jchiquet.github.io/MAP566/docs/mixed-models/map566-lecture-EM-linear-mixed-model.html)

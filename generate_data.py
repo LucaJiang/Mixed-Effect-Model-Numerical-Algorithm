@@ -3,16 +3,16 @@ import numpy as np
 import pandas as pd
 
 # Y = Z * omega + X * beta + e
-# np.random.seed(0)
-n = 500
-p = 100
+np.random.seed(0)
+n = 200
+p = 1200
 c = 30
 X = np.random.randn(n, p) * 0.1
 Z = np.random.randn(n, c)
-beta = np.random.randn(p, 1) - 0.05
-omega = np.random.randn(c, 1) + 1.5
+omega = np.random.randn(c, 1) + 2
 sigma_beta2 = 2
-sigma_e2 = 0.0001
+sigma_e2 = 0.01
+beta = np.random.randn(p, 1) * np.sqrt(sigma_beta2)
 e = np.random.randn(n, 1) * np.sqrt(sigma_e2)
 
 y = Z @ omega + X @ beta + e
