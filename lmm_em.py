@@ -97,7 +97,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
 
         # M step
         omega = ZTZinvZT @ (y - X @ beta)
-        sigma_beta2 = np.trace(Gamma)/n + np.linalg.norm(beta)**2 / p
+        sigma_beta2 = np.trace(Gamma)/p + np.linalg.norm(beta)**2 / p
         # sigma_beta2 = (np.trace(Gamma) + np.linalg.norm(beta)**2) / p
         sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 + np.trace(Gamma @ XXT) +
                     np.linalg.norm(X @ beta)**2 - 2 *
