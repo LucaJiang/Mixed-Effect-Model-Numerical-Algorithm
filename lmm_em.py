@@ -51,28 +51,36 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     n_, c = Z.shape
     assert n == n_, 'X and Z must have same number of rows'
     assert y.shape == (n, 1), 'y must be a column vector with length n'
+    n_geq_p = n >= p
 
     # Initialize parameters
     beta = np.random.randn(p, 1)
-    omega = np.random.randn(c, 1) * 1e-2
-    sigma_beta2 = 1.0
-    sigma_e2 = .01
+    omega = np.linalg.inv(Z.T @ Z) @ Z.T @ y
+    sigma_beta2 = np.var(y - Z @ omega) / 2
+    sigma_e2 = sigma_beta2
 
     # For accelerate calculation
     XXT = X @ X.T
-    # XTX = X.T @ X
+    XTX = X.T @ X
     ZTZinvZT = np.linalg.inv(Z.T @ Z) @ Z.T
 
-    # eigenvalue decomposition of Gamma
-    eigvals, eigvecs = np.linalg.eigh(XXT)
-    eigvals, eigvecs = eigvals.real, eigvecs.real
+    # eigenvalue decomposition of XXT
+    eigval_xxt, eigvecs_xxt = np.linalg.eigh(XXT)
+    eigval_xxt, eigvecs_xxt = eigval_xxt.real, eigvecs_xxt.real
 
-    cal_Gamma = lambda: eigvecs @ np.diag(1 / (eigvals / sigma_e2 + 1 / sigma_beta2)) @ eigvecs.T
+    if n_geq_p:
+        # eigenvalue decomposition of XTX, needed when n >= p
+        eigvals_xtx, eigvecs_xtx = np.linalg.eigh(XTX)
+        eigvals_xtx, eigvecs_xtx = eigvals_xtx.real, eigvecs_xtx.real
+        # calculation of Gamma when n >= p
+        cal_Gamma = lambda: eigvecs_xtx @ np.diag(1 / (eigvals_xtx / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xtx.T
+    else:
+        # calculation of Gamma when n < p
+        cal_Gamma = lambda: eigvecs_xxt @ np.diag(1 / (eigval_xxt / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xxt.T
 
     # log-likelihood
-    likelihood_const = -(n + p) / 2 * np.log(2 * np.pi)
-    cal_likelihood = lambda: likelihood_const - n / 2 * np.log(
-        sigma_e2) - 1 / 2 * np.linalg.norm(y - Z @ omega - X @ beta)**2 / sigma_e2 - p / 2 * np.log(sigma_beta2) - 1 / 2 * np.linalg.norm(beta)**2 / sigma_beta2
+    likelihood_const = -n / 2 * np.log(2 * np.pi)
+    cal_likelihood = lambda: likelihood_const - np.log(np.sum(sigma_beta2 * eigval_xxt + sigma_e2)) / 2 - (y - Z @ omega).T @ eigval_xxt @ 1 / (sigma_beta2 * np.diag(eigval_xxt) + sigma_e2) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
 
     # Record parameters in each iteration
     max_iter += 1
