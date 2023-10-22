@@ -46,12 +46,20 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     
     log-likelihood:
     l = - (n + p) / 2 * log(2 * pi) - n / 2 * log(sigma_e^2) - 1 / 2 * ||y - Z * omega - X * mu||^2 / sigma_e^2 - p / 2 * log(sigma_beta^2) - 1 / 2 * ||mu||^2 / sigma_beta^2
+
+    Calculation details:
+    1. n >= p:
+    Use eigenvalue decomposition of X * X^T to calculate Gamma
     '''
     n, p = X.shape
     n_, c = Z.shape
     assert n == n_, 'X and Z must have same number of rows'
     assert y.shape == (n, 1), 'y must be a column vector with length n'
+
+    # Choose the calculation method according to n and p
     n_geq_p = n >= p
+    print('n = {}, p = {}, model: {}'.format(n, p,
+                                             'n >= p' if n_geq_p else 'n < p'))
 
     # Initialize parameters
     beta = np.random.randn(p, 1)
@@ -73,14 +81,19 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
         eigvals_xtx, eigvecs_xtx = np.linalg.eigh(XTX)
         eigvals_xtx, eigvecs_xtx = eigvals_xtx.real, eigvecs_xtx.real
         # calculation of Gamma when n >= p
-        cal_Gamma = lambda: eigvecs_xtx @ np.diag(1 / (eigvals_xtx / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xtx.T
+        cal_Gamma = lambda: eigvecs_xtx @ np.diag(1 / (
+            eigvals_xtx / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xtx.T
     else:
         # calculation of Gamma when n < p
-        cal_Gamma = lambda: eigvecs_xxt @ np.diag(1 / (eigval_xxt / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xxt.T
+        cal_Gamma = lambda: eigvecs_xxt @ np.diag(1 / (
+            eigval_xxt / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xxt.T
 
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
-    cal_likelihood = lambda: likelihood_const - np.log(np.sum(sigma_beta2 * eigval_xxt + sigma_e2)) / 2 - (y - Z @ omega).T @ eigval_xxt @ 1 / (sigma_beta2 * np.diag(eigval_xxt) + sigma_e2) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
+    cal_likelihood = lambda: likelihood_const - np.log(
+        np.sum(sigma_beta2 * eigval_xxt + sigma_e2)) / 2 - (
+            y - Z @ omega).T @ eigval_xxt @ 1 / (sigma_beta2 * np.diag(
+                eigval_xxt) + sigma_e2) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
 
     # Record parameters in each iteration
     max_iter += 1
@@ -105,7 +118,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
 
         # M step
         omega = ZTZinvZT @ (y - X @ beta)
-        sigma_beta2 = np.trace(Gamma)/p + np.linalg.norm(beta)**2 / p
+        sigma_beta2 = np.trace(Gamma) / p + np.linalg.norm(beta)**2 / p
         # sigma_beta2 = (np.trace(Gamma) + np.linalg.norm(beta)**2) / p
         sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 + np.trace(Gamma @ XXT) +
                     np.linalg.norm(X @ beta)**2 - 2 *

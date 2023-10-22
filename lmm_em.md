@@ -60,12 +60,10 @@ $$\begin{equation}
 
 
 ### Statistical Inference in E-Step
-
-The E-step is to compute the expectation of the marginal data log-likelihood with respect to the conditional distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\mathbf{\Theta}$:
+The E-step is to compute the expectation of the complete data log-likelihood with respect to the conditional distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\mathbf{\Theta}$:
 $$\begin{equation}
-\begin{split}
-Q(\mathbf{\Theta}|\mathbf{\Theta}^{\text{old}}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}^{\text{old}}} \left[ \log p(\mathbf{y}, \mathbf{\beta}|\mathbf{\Theta}) \right]
-\end{split}\end{equation}$$
+Q(\mathbf{\Theta}|\mathbf{\Theta}^{\text{old}}) = \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta}^{\text{old}}} \ell(\mathbf{\Theta}, \mathbf{\beta}) 
+\end{equation}$$
 
 Therefore, we need to find the posterior distribution of $\mathbf{\beta}$ given $\mathbf{y}$ and $\mathbf{\Theta}$. However the posterior distribution of $\mathbf{\beta}$ can not be obtained directly. Instead, by applying Bayes' rule, we have
 $$\begin{equation}
@@ -78,9 +76,9 @@ p(\mathbf{\beta}| \mathbf{y}, \mathbf{\Theta})
 &\propto \exp \left\{-\frac{1}{2}\left( \mathbf{\beta} - \mathbf{\mu}\right)^T \mathbf{\Gamma}^{-1} \left( \mathbf{\beta} - \mathbf{\mu}\right) \right\}
 \end{split}\end{equation}$$
 
-where $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$ and $\mathbf{\mu} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma})$. [^Notes]
+where $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$ and $\mathbf{\mu} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2$. And, the posterior distribution of $\mathbf{\beta}$ is $\mathbf{\beta}|\mathbf{y}, \mathbf{\Theta} \sim \mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma})$. [^1]
 
-[^Notes]: Notes on the derivation of the posterior distribution of $\mathbf{\beta}$: Let $g(\mathbf{\beta})= -\frac{1}{2}(\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) -\frac{1}{2} \mathbf{\beta}^T (\sigma_\beta^2 \mathbf{I}_p)^{-1} \mathbf{\beta}$. Then we have $\nabla g(\mathbf{\beta}) = \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})/\sigma_e^2 - \mathbf{\beta}/\sigma_\beta^2$. Let $\nabla g(\mathbf{\beta}) = 0$, we have $\mathbf{\beta} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega})/\sigma_e^2$, where $g(\mathbf{\beta})$ is maximized. Thus, we find the $\mathbf{\mu}$. To obtain the variance of $\mathbf{\beta}$, we need to calculate the Hessian matrix of $g(\mathbf{\beta})$ and evaluate it at $\mathbf{\beta} = \mathbf{\mu}$. The Hessian matrix is given by $\nabla^2 g(\mathbf{\beta}) = \mathbf{X}^T \mathbf{X}/\sigma_e^2 + \mathbf{I}_p/\sigma_\beta^2$. Therefore, the variance of $\mathbf{\beta}$ is $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$.
+[^1]: Notes on the derivation of the posterior distribution of $\mathbf{\beta}$: Let $g(\mathbf{\beta})= -\frac{1}{2}(\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})^T (\sigma_e^2\mathbf{I}_n)^{-1} (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}) -\frac{1}{2} \mathbf{\beta}^T (\sigma_\beta^2 \mathbf{I}_p)^{-1} \mathbf{\beta}$. Then we have $\nabla g(\mathbf{\beta}) = \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})/\sigma_e^2 - \mathbf{\beta}/\sigma_\beta^2$. Let $\nabla g(\mathbf{\beta}) = 0$, we have $\mathbf{\beta} = \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega})/\sigma_e^2$, where $g(\mathbf{\beta})$ is maximized. Thus, we find the $\mathbf{\mu}$. To obtain the variance of $\mathbf{\beta}$, we need to calculate the Hessian matrix of $g(\mathbf{\beta})$ and evaluate it at $\mathbf{\beta} = \mathbf{\mu}$. The Hessian matrix is given by $\nabla^2 g(\mathbf{\beta}) = \mathbf{X}^T \mathbf{X}/\sigma_e^2 + \mathbf{I}_p/\sigma_\beta^2$. Therefore, the variance of $\mathbf{\beta}$ is $\mathbf{\Gamma} = \left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$.
 
 Thus, we have
 $$\begin{equation}
@@ -89,9 +87,8 @@ Q(\Theta|\Theta^{\text{old}}) &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{
 &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{\text{old}}} \left[ \log p(\mathbf{y}| \mathbf{\beta}, \mathbf{\Theta}) + \log p(\mathbf{\beta}| \Theta) \right]\\
 &= \mathbb{E}_{\mathbf{\beta}|\mathbf{y}, \Theta^{\text{old}}} \left[ -\frac{n}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^2 - \frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2 \right.\\
 &\quad \left. -\frac{p}{2} \log (2\pi) -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta} \right]\\
-&= -\frac{n+p}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^{2}\\
-&\quad - \frac{1}{2\sigma_e^{2}} \left(\|\mathbf{y} - \mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + \mathbf{\mu}^T\mathbf{X}^T \mathbf{X}\mathbf{\mu}- 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \right)\\
-&\quad -\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \text{tr}(\mathbf{\Gamma}) - \frac{1}{2\sigma_\beta^2} \mathbf{\mu}^{T} \mathbf{\mu}
+&= -\frac{n+p}{2} \log (2\pi) -\frac{n}{2} \log \sigma_e^{2}-\frac{p}{2} \log \sigma_\beta^2 - \frac{1}{2\sigma_\beta^2} \text{tr}(\mathbf{\Gamma}) - \frac{1}{2\sigma_\beta^2} \mathbf{\mu}^{T} \mathbf{\mu}\\
+&\quad - \frac{1}{2\sigma_e^{2}} \left(\|\mathbf{y} - \mathbf{Z}\mathbf{\omega}\|^2 + \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + \mathbf{\mu}^T\mathbf{X}^T \mathbf{X}\mathbf{\mu}- 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \right)
 \end{split}\end{equation}$$
 
 Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
@@ -140,11 +137,14 @@ $$\begin{equation}
 
 where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$ is a diagonal matrix. The inverse of a diagonal matrix is the reciprocal of the diagonal elements.
 
+Let $l_i = \frac{\lambda_i}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}$, then $\mathbf{\Gamma} = \mathbf{Q} \text{diag} \left\{ \frac{1}{l_1}, \dots, \frac{1}{l_p} \right\} \mathbf{Q}^T$.
+
 Therefore,
 $$\begin{equation}
 \begin{split}
 \hat{\mathbf{\beta}} &= \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2\\
-&= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1} \mathbf{Q}^T \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2
+&= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1} \mathbf{Q}^T \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2\\
+&= \mathbf{Q} \text{diag} \left\{ \frac{1}{l_1}, \dots, \frac{1}{l_p} \right\} \mathbf{Q}^T \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2
 \end{split}\end{equation}$$
 
 
