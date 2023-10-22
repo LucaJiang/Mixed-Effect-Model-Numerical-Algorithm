@@ -137,7 +137,7 @@ $$\begin{equation}
 
 where $\left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1}$ is a diagonal matrix. The inverse of a diagonal matrix is the reciprocal of the diagonal elements.
 
-Let $l_i = \frac{\lambda_i}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}$, then $\mathbf{\Gamma} = \mathbf{Q} \text{diag} \left\{ \frac{1}{l_1}, \dots, \frac{1}{l_p} \right\} \mathbf{Q}^T$.
+<!-- Let $l_i = \frac{\lambda_i}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}$, then $\mathbf{\Gamma} = \mathbf{Q} \text{diag} \left\{ \frac{1}{l_1}, \dots, \frac{1}{l_p} \right\} \mathbf{Q}^T$.
 
 Therefore,
 $$\begin{equation}
@@ -145,7 +145,7 @@ $$\begin{equation}
 \hat{\mathbf{\beta}} &= \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2\\
 &= \mathbf{Q} \left(\frac{\mathbf{\Lambda}}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2} \right)^{-1} \mathbf{Q}^T \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2\\
 &= \mathbf{Q} \text{diag} \left\{ \frac{1}{l_1}, \dots, \frac{1}{l_p} \right\} \mathbf{Q}^T \mathbf{X}^T (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2
-\end{split}\end{equation}$$
+\end{split}\end{equation}$$ -->
 
 
 ### M-step
@@ -208,8 +208,8 @@ The EM algorithm is an iterative algorithm that alternates between the E-step an
     $$\begin{equation}
     \begin{split}
     \hat{\mathbf{\omega}}^{(t+1)} &= (\mathbf{Z}^T \mathbf{Z})^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\beta}^{(t+1)})\\
-    \hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\sum_{i=1}^p \left(\hat{\lambda}_i^{(t)}/\sigma_e^{2(t)} +1/\sigma_\beta^{2(t)}\right)^{-1}  + \|\mathbf{\beta}^{(t+1)}\|^2 \right)\\
-    \hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)}\|^2 + \sum_{i=1}^p \frac{\hat{\lambda}_i^{(t)} \sigma_e^{2(t)} \sigma_\beta^{2(t)}}{\sigma_e^{2(t)} + \sigma_\beta^{2(t)} \hat{\lambda}_i^{(t)}}+ \|\mathbf{X}\mathbf{\beta}^{(t+1)} \|^2 - 2(\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)})^T \mathbf{X}\mathbf{\beta}^{(t+1)}\right)
+    \hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\sum_{i=1}^p \left({\lambda}_i^{(t)}/\sigma_e^{2(t)} +1/\sigma_\beta^{2(t)}\right)^{-1}  + \|\mathbf{\beta}^{(t+1)}\|^2 \right)\\
+    \hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)}\|^2 + \sum_{i=1}^p \frac{{\lambda}_i^{(t)} \sigma_e^{2(t)} \sigma_\beta^{2(t)}}{\sigma_e^{2(t)} + \sigma_\beta^{2(t)} {\lambda}_i^{(t)}}+ \|\mathbf{X}\mathbf{\beta}^{(t+1)} \|^2 - 2(\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)})^T \mathbf{X}\mathbf{\beta}^{(t+1)}\right)
     \end{split}\end{equation}$$
    3. Calculate $\ell(\mathbf{\Theta}^{(t+1)})$:
     $$\begin{equation}
@@ -238,7 +238,21 @@ Let
 $$\begin{equation}
 \tilde{\mathbf{\Gamma}} = \left(\frac{\mathbf{X} \mathbf{X}^T}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\beta^2} \right)^{-1} 
 \end{equation}$$
-then we can use the eigenvalue decomposition of $\mathbf{X} \mathbf{X}^T$ to accelerate the calculation of $\tilde{\mathbf{\Gamma}}$.
+then we can use the eigenvalue decomposition of $\mathbf{X} \mathbf{X}^T$ to accelerate the calculation of $\tilde{\mathbf{\Gamma}}$. Also, it's obvious that $\text{tr}(\tilde{\mathbf{\Gamma}}) = \text{tr}(\mathbf{\Gamma})$ and
+$$\begin{equation}
+\hat{\mathbf{\beta}}=\tilde{\mathbf{\mu}}=\mathbf{X}^T \tilde{\mathbf{\Gamma}} (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^2
+\end{equation}$$
+
+<!--!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! -->
+Since the rank of $\mathbf{X} \mathbf{X}^T$ and $\mathbf{X}^T \mathbf{X}$ are equal (to the number of non-zero eigenvalues), when $n < p$, we have
+$$\begin{equation}
+\begin{split}
+\tilde{\mathbf{\mu}}^T \tilde{\mathbf{\mu}} &= (\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T\tilde{\mathbf{\Gamma}}^T\mathbf{X}\mathbf{X}^T\tilde{\mathbf{\Gamma}} (\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^4\\
+&= (\mathbf{y}-\mathbf{Z}\mathbf{\omega})^T\mathbf{X}  \mathbf{\Gamma}^T \mathbf{\Gamma} \mathbf{X}^T(\mathbf{y}-\mathbf{Z}\mathbf{\omega})/\sigma_e^4 -(n-p)\sigma_\beta^2\\
+\sigma_\beta^2&=\frac{1}{p} \left(\text{tr}(\mathbf{\Gamma}) + \| \mathbf{\mu}\|^2 \right) \\
+&= \frac{1}{p} \left(\text{tr}(\tilde{\mathbf{\Gamma}}) + \| \tilde{\mathbf{\mu}}\|^2 + (n-p) \sigma_\beta^2 \right)
+\end{split}
+\end{equation}$$
 
 ### Eigenvalue decomposition
 Let $\mathbf{X} \mathbf{X}^T = \tilde{\mathbf{Q}} \tilde{\mathbf{\Lambda}} \tilde{\mathbf{Q}}^T$, where $\tilde{\mathbf{Q}}$ is an orthogonal matrix and $\tilde{\mathbf{\Lambda}}$ is a diagonal matrix with the eigenvalues of $\mathbf{X} \mathbf{X}^T$ on the diagonal. Then we have
@@ -249,14 +263,14 @@ $$\begin{equation}
 
 where $\left(\frac{\tilde{\mathbf{\Lambda}}}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\beta^2} \right)^{-1}$ is a diagonal matrix. The inverse of a diagonal matrix is the reciprocal of the diagonal elements.
 
-We can update $\mathbf{\Sigma}^{-1}$ and $\text{tr}(\mathbf{X}\mathbf{X}^T \mathbf{\Gamma})$ as follows:
+We can update $\text{tr}(\mathbf{X}\mathbf{X}^T \mathbf{\Gamma})$ as follows:
 $$\begin{equation}\begin{split}
-\mathbf{\Sigma}^{-1} &= \tilde{\mathbf{Q}} \left(\sigma_\beta^2 \tilde{\mathbf{\Lambda}} + \sigma_e^2 \mathbf{I}_n\right)^{-1} \tilde{\mathbf{Q}}^T\\
-&= \frac{1} {\sigma_\beta^2\sigma_e^2} \tilde{\mathbf{Q}} \tilde{\mathbf{\Gamma}} \tilde{\mathbf{Q}}^T\\
 \text{tr}(\mathbf{X}\mathbf{X}^T \mathbf{\Gamma}) &= \text{tr}\left(\tilde{\mathbf{Q}} \tilde{\mathbf{\Lambda}} \tilde{\mathbf{Q}}^T \tilde{\mathbf{Q}} \left(\frac{\tilde{\mathbf{\Lambda}}}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\beta^2} \right)^{-1} \tilde{\mathbf{Q}}^T\right)\\
 &= \text{tr}\left(\tilde{\mathbf{Q}} \tilde{\mathbf{\Lambda}} \left(\frac{\tilde{\mathbf{\Lambda}}}{\sigma_e^2} + \frac{\mathbf{I}_n}{\sigma_\beta^2} \right)^{-1} \tilde{\mathbf{Q}}^T\right)\\
 &= \sum_{i=1}^n \frac{\tilde{\lambda}_i \sigma_\beta^2 \sigma_e^2}{\sigma_e^2 + \sigma_\beta^2 \tilde{\lambda}_i}
 \end{split}\end{equation}$$
+
+
 
 ### Pseudocode
 The EM algorithm when $n<p$ is summarized as follows:
@@ -269,19 +283,18 @@ The EM algorithm when $n<p$ is summarized as follows:
       \hat{\mathbf{\beta}}^{(t+1)} &= \mathbf{X}^T  \tilde{\mathbf{\Gamma}}^{(t)}(\mathbf{y}-\mathbf{Z}\mathbf{\omega}^{(t)})/\sigma_e^{2(t)}
       \end{split}\end{equation}$$
     2. M-step: Estimate $\hat{\mathbf{\Theta}}=\{\hat{\mathbf{\omega}}, \hat{\sigma}_\beta^{2}, \hat{\sigma}_e^{2}\}$.
-      $$\begin{equation}
+    $$\begin{equation}
       \begin{split}
       \hat{\mathbf{\omega}}^{(t+1)} &= (\mathbf{Z}^T \mathbf{Z})^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\beta}^{(t+1)})\\
-      \hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\sum_{i=1}^n \left(\hat{\lambda}_i^{(t)}/\sigma_e^{2(t)} + 1/\sigma_\beta^{2(t)}\right)^{-1} + \|\mathbf{\beta}^{(t+1)}\|^2+(n-p)\hat{\sigma}_\beta^2  \right)\\
-      \hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)}\|^2 + \sum_{i=1}^p \frac{\hat{\lambda}_i^{(t)} \sigma_e^{2(t)} \sigma_\beta^{2(t)}}{\sigma_e^{2(t)} + \sigma_\beta^{2(t)} \hat{\lambda}_i^{(t)}}+ \|\mathbf{X}\mathbf{\beta}^{(t+1)} \|^2 - 2(\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)})^T \mathbf{X}\mathbf{\beta}^{(t+1)}\right)
+      \hat{\sigma}_\beta^{2(t+1)} &= \frac{1}{p} \left(\sum_{i=1}^n \left(\tilde{\lambda}_i^{(t)}/\sigma_e^{2(t)} + 1/\sigma_\beta^{2(t)}\right)^{-1} + \|\mathbf{\beta}^{(t+1)}\|^2+(n-p)\hat{\sigma}_\beta^{2(t)}  \right)\\
+      \hat{\sigma}_e^{2(t+1)} &= \frac{1}{n}\left( \|\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)}\|^2 + \sum_{i=1}^p \frac{\tilde{\lambda}_i^{(t)} \sigma_e^{2(t)} \sigma_\beta^{2(t+1)}}{\sigma_e^{2(t)} + \sigma_\beta^{2(t+1)} \tilde{\lambda}_i^{(t)}}+ \|\mathbf{X}\mathbf{\beta}^{(t+1)} \|^2 - 2(\mathbf{y}-\mathbf{Z}\hat{\mathbf{\omega}}^{(t+1)})^T \mathbf{X}\mathbf{\beta}^{(t+1)}\right)
       \end{split}\end{equation}$$
     3. Calculate $\ell(\mathbf{\Theta}^{(t+1)})$:
     $$\begin{equation}
-    \ell(\mathbf{\Theta}^{(t+1)}) = -\frac{n}{2} \log(2\pi)-\frac{1}{2} \log \text{tr}\left(\sigma_\beta^{2(t+1)}\tilde{\mathbf{\Lambda}}^{(t)} + \sigma_e^{2(t+1)} \mathbf{I}_n\right) - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)})^T \tilde{\mathbf{Q}} \left(\sigma_\beta^{2(t+1)} \tilde{\mathbf{\Lambda}}^{(t)} + \sigma_e^{2(t+1)} \mathbf{I}_n\right)^{-1} \tilde{\mathbf{Q}}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)})
+    \ell(\mathbf{\Theta}^{(t+1)}) = -\frac{n}{2} \log(2\pi)-\frac{1}{2} \log\sum_{i=1}^n \left(\sigma_\beta^{2(t+1)} \tilde{\lambda}_i^{(t)} + \sigma_e^{2(t+1)} \right) - \frac{1}{2} (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)})^T \tilde{\mathbf{Q}} \left(\sigma_\beta^{2(t+1)} \tilde{\mathbf{\Lambda}}^{(t)} + \sigma_e^{2(t+1)} \mathbf{I}_n\right)^{-1} \tilde{\mathbf{Q}}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}^{(t+1)})
     \end{equation}$$
     4. Check $|\Delta \ell|=|\ell(\mathbf{\Theta}^{(t+1)}) - \ell(\mathbf{\Theta}^{(t)})| < \varepsilon$ for convergence. If converged, stop. Otherwise, continue.
  3. Return results.
-<!--! \sigma_\beta^2 ????????  -->
 
 
 ## Codes and Results
