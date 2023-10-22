@@ -49,12 +49,12 @@ $$\begin{equation}
 
 So the update equations for $\mathbf{\mu}$ is:
 $$\begin{equation}
-\mathbf{\mu}^{(t+1)} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p-1}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right)}{\sigma_e^2} + \frac{\mathbf{\mu}^{(t)}}{\sigma_\mathbf{\beta}^2} \right)
+\mathbf{\mu}^{(t+1)} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right)}{\sigma_e^2} + \frac{\mathbf{\mu}^{(t)}}{\sigma_\mathbf{\beta}^2} \right)
 \end{equation}$$
 
-Equation (6) can be rewritten as:
+Previous equation can be rewritten as:
 $$\begin{equation}
-\mathbf{\mu} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p-1}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\mathbf{X}}{\sigma_e^2} \left(\mathbf{X}^T \mathbf{X}\right)^{-1}\mathbf{X}^T \left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right) + \frac{\mathbf{\beta}}{\sigma_\mathbf{\beta}^2} \right)
+\mathbf{\mu} =\left(\frac{\mathbf{X}^T \mathbf{X}}{\sigma_e^2} + \frac{\mathbf{I}_{p}}{\sigma_\mathbf{\beta}^2} \right)^{-1} \left(\frac{\mathbf{X}^T\mathbf{X}}{\sigma_e^2} \left(\mathbf{X}^T \mathbf{X}\right)^{-1}\mathbf{X}^T \left(\mathbf{y}- \mathbf{Z}\mathbf{\omega}\right) + \frac{\mathbf{\beta}}{\sigma_\mathbf{\beta}^2} \right)
 \end{equation}$$
 which is a weighted average of the MLE solve of $\mathbf{y}-\mathbf{Z}\mathbf{\omega} = \mathbf{X}\mathbf{\beta}$ and the prior $\mathbf{\beta} \sim \mathcal{N}(\mathbf{0}, \sigma_\mathbf{\beta}^2 \mathbf{I}_{p})$.  
 
@@ -71,9 +71,9 @@ Using the following algorithm to estimate $\mathbb{E}(\mathbf{\beta})$ in the
 1. Initialize $\Theta^{(0)}$ and $\mathbf{\mu}^{(0)}$ randomly.
 2. For $t = 0, 1, \dots$, MAX_ITERATION:
    1. E-step: Estimate $\hat{\mathbf{\beta}}^{(t)}$.
-   2. M-step: Estimate $\hat{\Theta}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
-   3. Compute $\text{ELBO}$ and $\Delta \ell_c$. 
-   4. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
+   2. Compute $\text{ELBO}$
+   3. M-step: Estimate $\hat{\Theta}^{(t+1)}=\{\hat{\mathbf{\omega}}^{(t+1)}, \hat{\sigma}_\beta^{2(t+1)}, \hat{\sigma}_e^{2(t+1)}\}$.
+   4. Compute $\Delta \ell_c$. Check $|\Delta \ell_c|$ for convergence. If converged, stop. Otherwise, continue.
 3. Return results.
 
 ## Code and Results

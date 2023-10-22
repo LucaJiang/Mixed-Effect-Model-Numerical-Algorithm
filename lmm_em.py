@@ -34,22 +34,51 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     e ~ N(0, sigma_e^2 * I_n)
     beta ~ N(0, sigma_beta^2 * I_p)
 
+    Initialization:
+    omega = (Z^T * Z)^-1 * Z^T * y
+    sigma_beta^2 = var(y - Z * omega) / 2
+    sigma_e^2 = var(y - Z * omega) / 2
+
+    Implementation:
+    Eignvalue decomposition:
+        X^T * X = eigvecs_xtx * diag(eigvals_xtx) * eigvecs_xtx^T (Q: p x p)
+        X * X^T = eigvecs_xxt * diag(eigvals_xxt) * eigvecs_xxt^T (tilde{Q}: n x n)
+    
+    1. For n >= p:
     E-step:
-    Gamma = (X * X^T / sigma_e^2 + I_n / sigma_beta^2)^-1
-    mu = X^T * Gamma * (y - Z * omega) / sigma_e^2
-    beta = mu
+        Gamma = eigvecs_xtx * diag(1 / (eigvals_xtx / sigma_e^2 + \
+            1 / sigma_beta^2)) * eigvecs_xtx^T
+        mu = Gamma * X^T * (y - Z * omega) / sigma_e^2
+        beta = mu
 
     M-step:
-    omega = (Z^T * Z)^-1 * Z^T * (y - X * mu)
-    sigma_beta^2 = (trace(Gamma) + ||mu||^2) / p
-    sigma_e^2 = (||y - Z * W||^2 + trace(X * X^T * Gamma) + ||X * mu||^2 - 2 * (y - Z * W)^T * X * mu) / n
-    
-    log-likelihood:
-    l = - (n + p) / 2 * log(2 * pi) - n / 2 * log(sigma_e^2) - 1 / 2 * ||y - Z * omega - X * mu||^2 / sigma_e^2 - p / 2 * log(sigma_beta^2) - 1 / 2 * ||mu||^2 / sigma_beta^2
+        omega = (Z^T * Z)^-1 * Z^T * (y - X * mu)
+        sigma_beta^2 = (sum 1/(eigvals_xtx / sigma_e^2 + 1 / sigma_beta^2) \
+            + ||mu||^2) / p
+        sigma_e^2 = (||y - Z * omega||^2 + sum(eigvals_xtx * sigma_beta^2 * sigma_e^2 / \
+            (eigvals_xtx * sigma_beta^2 + sigma_e^2)) + \
+            ||X * mu||^2 - 2 * (y - Z * omega)^T * X * mu) / n
 
-    Calculation details:
-    1. n >= p:
-    Use eigenvalue decomposition of X * X^T to calculate Gamma
+    2. For n < p:
+    E-step:
+        Gamma = eigvecs_xxt * diag(1 / (eigvals_xxt / sigma_e^2 + \
+            1 / sigma_beta^2)) * eigvecs_xxt^T
+        mu = X^T * Gamma * (y - Z * omega) / sigma_e^2
+        beta = mu
+
+    M-step:
+        omega = (Z^T * Z)^-1 * Z^T * (y - X * mu)
+        sigma_beta^2 = (sum 1/(eigvals_xxt / sigma_e^2 + 1 / sigma_beta^2) \
+            + ||mu||^2 + (n - p) * sigma_beta^2) / p
+        sigma_e^2 = (||y - Z * omega||^2 + sum(eigvals_xxt * sigma_beta^2 * sigma_e^2 / \
+            (eigvals_xxt * sigma_beta^2 + sigma_e^2)) + \
+            ||X * mu||^2 - 2 * (y - Z * omega)^T * X * mu) / n
+    
+    log-likelihood (n >= p or n < p):
+        l = - n / 2 * log(2 * pi) - 1 / 2 * log(sum (sigma_beta^2 * eigvals_xxt + \
+            sigma_e^2)) - 1 / 2 * (y - Z * omega)^T * eigvals_xxt * \
+            1 / diag(sigma_beta^2 * eigvals_xxt + sigma_e^2) * eigvecs_xxt^T * \
+            (y - Z * omega)
     '''
     n, p = X.shape
     n_, c = Z.shape
@@ -73,27 +102,43 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     ZTZinvZT = np.linalg.inv(Z.T @ Z) @ Z.T
 
     # eigenvalue decomposition of XXT
-    eigval_xxt, eigvecs_xxt = np.linalg.eigh(XXT)
-    eigval_xxt, eigvecs_xxt = eigval_xxt.real, eigvecs_xxt.real
+    eigvals_xxt, eigvecs_xxt = np.linalg.eigh(XXT)
+    eigvals_xxt, eigvecs_xxt = eigvals_xxt.real, eigvecs_xxt.real
 
     if n_geq_p:
         # eigenvalue decomposition of XTX, needed when n >= p
         eigvals_xtx, eigvecs_xtx = np.linalg.eigh(XTX)
         eigvals_xtx, eigvecs_xtx = eigvals_xtx.real, eigvecs_xtx.real
-        # calculation of Gamma when n >= p
+        # n >= p
         cal_Gamma = lambda: eigvecs_xtx @ np.diag(1 / (
             eigvals_xtx / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xtx.T
+        cal_mu = lambda Gamma: Gamma @ X.T @ (y - Z @ omega) / sigma_e2
+        cal_sigma_beta2 = lambda mu: (np.sum(1 / (
+            eigvals_xtx / sigma_e2 + 1 / sigma_beta2)) + np.linalg.norm(mu)**2
+                                      ) / p
+        cal_sigma_e2 = lambda mu: (np.linalg.norm(y - Z @ omega)**2 + np.sum(
+            eigvals_xtx * sigma_beta2 * sigma_e2 /
+            (eigvals_xtx * sigma_beta2 + sigma_e2)) + np.linalg.norm(
+                X @ mu)**2 - 2 * ((y - Z @ omega).T @ X @ mu)[0, 0]) / n
     else:
-        # calculation of Gamma when n < p
+        # n < p
         cal_Gamma = lambda: eigvecs_xxt @ np.diag(1 / (
-            eigval_xxt / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xxt.T
+            eigvals_xxt / sigma_e2 + 1 / sigma_beta2)) @ eigvecs_xxt.T
+        cal_mu = lambda Gamma: X.T @ Gamma @ (y - Z @ omega) / sigma_e2
+        cal_sigma_beta2 = lambda mu: (np.sum(1 / (
+            eigvals_xxt / sigma_e2 + 1 / sigma_beta2)) + np.linalg.norm(mu)**2
+                                      + (n - p) * sigma_beta2) / p
+        cal_sigma_e2 = lambda mu: (np.linalg.norm(y - Z @ omega)**2 + np.sum(
+            eigvals_xxt * sigma_beta2 * sigma_e2 /
+            (eigvals_xxt * sigma_beta2 + sigma_e2)) + np.linalg.norm(
+                X @ mu)**2 - 2 * ((y - Z @ omega).T @ X @ mu)[0, 0]) / n
 
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
     cal_likelihood = lambda: likelihood_const - np.log(
-        np.sum(sigma_beta2 * eigval_xxt + sigma_e2)) / 2 - (
-            y - Z @ omega).T @ eigval_xxt @ 1 / (sigma_beta2 * np.diag(
-                eigval_xxt) + sigma_e2) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
+        np.sum(sigma_beta2 * eigvals_xxt + sigma_e2)) / 2 - (
+            y - Z @ omega).T @ eigvals_xxt @ (1 / (sigma_beta2 * np.diag(
+                eigvals_xxt) + sigma_e2)) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
 
     # Record parameters in each iteration
     max_iter += 1
@@ -111,18 +156,16 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
 
     # EM algorithm
     print('EM algorithm starts')
+    convergence = False
     for iter in range(1, max_iter):
         # E step
         Gamma = cal_Gamma()
-        beta = X.T @ Gamma @ (y - Z @ omega) / sigma_e2
+        beta = cal_mu(Gamma)
 
         # M step
         omega = ZTZinvZT @ (y - X @ beta)
-        sigma_beta2 = np.trace(Gamma) / p + np.linalg.norm(beta)**2 / p
-        # sigma_beta2 = (np.trace(Gamma) + np.linalg.norm(beta)**2) / p
-        sigma_e2 = (np.linalg.norm(y - Z @ omega)**2 + np.trace(Gamma @ XXT) +
-                    np.linalg.norm(X @ beta)**2 - 2 *
-                    ((y - Z @ omega).T @ X @ beta)[0, 0]) / n
+        sigma_beta2 = cal_sigma_beta2(beta)
+        sigma_e2 = cal_sigma_e2(beta)
 
         # Calculate likelihood
         likelihood_list[iter] = cal_likelihood()
@@ -134,6 +177,7 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
 
         # Check convergence
         if np.abs(likelihood_list[iter] - likelihood_list[iter - 1]) < tol:
+            convergence = True
             break
 
         # Print process information
@@ -145,10 +189,10 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
             print('sigma_beta^2: {:.4e}'.format(sigma_beta2))
             print('sigma_e^2: {:.4e}'.format(sigma_e2))
 
+    # Algorithm summary
     beta_post_mean = np.mean(beta)
     resident = np.linalg.norm(y - Z @ omega - X @ beta)**2 / n
-
-    if iter == max_iter - 1:
+    if not convergence:
         print(
             'EM algorithm does not converge within {} iterations'.format(iter))
     else:

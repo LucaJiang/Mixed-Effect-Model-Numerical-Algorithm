@@ -36,7 +36,7 @@ where $\mathbf{\omega} \in \mathbb{R}^c$ is the vector of fixed effects, $\mathb
 The LMM can be solved by various methods, such as the restricted maximum likelihood (REML) and the maximum likelihood (ML). The REML is a method of estimation that does not base estimates on a maximum likelihood fit of all the information, but instead uses a likelihood function derived from a transformed set of data, so that nuisance parameters have no effect. The ML is a method of estimating the parameters of a statistical model given observations, by finding the parameter values that maximize the likelihood of making the observations given the parameters. The ML is a special case of the maximum a posteriori estimation (MAP) that assumes that the prior over the parameters is uniform or non-informative.
 
 ## Formal Description of Bayesian Inference and Variational Inference
-The following contents are basically from [Wikipedia-BI](https://en.wikipedia.org/wiki/Bayesian_inference) and [Wikipedia_VBM](https://en.wikipedia.org/wiki/Variational_Bayesian_methods). The purpose of this section is to provide a formal description of Bayesian inference and variational inference, which will be used in the following sections.
+The following contents are basically from [Wikipedia-BI](https://en.wikipedia.org/wiki/Bayesian_inference) and [Wikipedia-VBM](https://en.wikipedia.org/wiki/Variational_Bayesian_methods). The purpose of this section is to provide a formal description of Bayesian inference and variational inference, which will be used in the following sections.
 
 ### Definitions
 - $\mathbf{x}$: a data point in general.
