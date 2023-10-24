@@ -74,9 +74,9 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
             (eigvals_xxt * sigma_beta^2 + sigma_e^2)) + \
             ||X * mu||^2 - 2 * (y - Z * omega)^T * X * mu) / n
     
-    log-likelihood (n >= p or n < p):
+    log-likelihood (n >= p and n < p):
         l = - n / 2 * log(2 * pi) - 1 / 2 * log(sum (sigma_beta^2 * eigvals_xxt + \
-            sigma_e^2)) - 1 / 2 * (y - Z * omega)^T * eigvals_xxt * \
+            sigma_e^2)) - 1 / 2 * (y - Z * omega)^T * eigvecs_xxt * \
             1 / diag(sigma_beta^2 * eigvals_xxt + sigma_e^2) * eigvecs_xxt^T * \
             (y - Z * omega)
     '''
@@ -136,9 +136,9 @@ def lmm_em(y, X, Z, tol=1e-6, max_iter=10, verbose=True):
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
     cal_likelihood = lambda: likelihood_const - np.log(
-        np.sum(sigma_beta2 * eigvals_xxt + sigma_e2)) / 2 - (
-            y - Z @ omega).T @ eigvals_xxt @ (1 / (sigma_beta2 * np.diag(
-                eigvals_xxt) + sigma_e2)) @ eigvecs_xxt.T @ (y - Z @ omega) / 2
+        np.sum(sigma_beta2 * eigvals_xxt + sigma_e2)) / 2 - (y - Z @ omega).T @\
+            eigvecs_xxt @ np.diag(1 / (sigma_beta2 * eigvals_xxt + sigma_e2)) @\
+            eigvecs_xxt.T @ (y - Z @ omega) / 2
 
     # Record parameters in each iteration
     max_iter += 1
@@ -230,7 +230,8 @@ def visual_em(likelihood_list, sigma_beta2_list, sigma_e2_list, omega_list,
     axes[1, 0].set_title(r'$\omega$')
 
     # hist
-    sns.distplot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
+    # sns.distplot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
+    sns.displot(omega_list[:, -1], ax=axes[1, 1], label=r'$\omega$')
     axes[1, 1].axvline(beta_post_mean,
                        color='r',
                        linestyle='--',

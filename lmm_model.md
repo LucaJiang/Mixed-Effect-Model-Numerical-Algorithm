@@ -60,6 +60,7 @@ The following contents are basically from [Wikipedia-BI](https://en.wikipedia.or
 
 ### Variational Inference
 - **KL Divergence**: $\text{KL}(q||p) = \int q(\mathbf{Z})\log\frac{q(\mathbf{Z})}{p(\mathbf{Z})}d\mathbf{Z}$, where $q(\mathbf{Z})$ and $p(\mathbf{Z})$ are two distributions over the latent variables $\mathbf{Z}$.
+- **Q Function**: $Q(q) = \mathbb{E}_{q(\mathbf{Z})}[\log p(\mathbf{X}, \mathbf{Z})] + \text{const}$, where $p(\mathbf{X}, \mathbf{Z})$ is the joint distribution of the observed data $\mathbf{X}$ and the latent variables $\mathbf{Z}$.
 - **Evidence Lower Bound (ELBO)**: $\mathcal{L}(q)=\text{ELBO}(q) = \int q(\mathbf{Z})\log\frac{p(\mathbf{X}, \mathbf{Z})}{q(\mathbf{Z})}d\mathbf{Z} = \int q(\mathbf{Z})\log p(\mathbf{X}|\mathbf{Z})d\mathbf{Z} - \text{KL}(q(\mathbf{Z})||p(\mathbf{Z}))$, where $p(\mathbf{X}, \mathbf{Z}) = p(\mathbf{X}|\mathbf{Z})p(\mathbf{Z})$ is the joint distribution of the observed data $\mathbf{X}$ and the latent variables $\mathbf{Z}$, and $p(\mathbf{Z})$ is the prior distribution of the latent variables $\mathbf{Z}$.
 - **Log-Evidence**: $\log p(\mathbf{X}) = \text{ELBO}(q) + \text{KL}(q(\mathbf{Z})||p(\mathbf{Z}|\mathbf{X}))$.
 - **Variational Inference**: $q^*(\mathbf{Z}) = \arg\min_{q(\mathbf{Z})} \text{KL}(q(\mathbf{Z})||p(\mathbf{Z}|\mathbf{X}))= \arg\max_{q(\mathbf{Z})} \text{ELBO}(q)$.
