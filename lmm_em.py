@@ -8,13 +8,14 @@ import time
 sns.set_style("whitegrid")
 
 
-def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
+def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
     """
     Input:
     y: n x 1, response
     X: n x p, random effect
     Z: n x c, fixed effect
-    tol: float, tolerance for convergence, default 1e-3
+    mfvi: bool, mean field variational inference in E step, default False
+    tol: float, tolerance for convergence, default 1e-6
     max_iter: int, maximum number of iterations, default 10
     verbose: bool, print information, default True
 
@@ -91,7 +92,8 @@ def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
     # Initialize parameters
     mu = np.random.randn(p, 1)
     omega = np.linalg.inv(Z.T @ Z) @ Z.T @ y
-    sigma_beta2 = np.var(y - Z @ omega) / 2
+    y_z_omega = y - Z @ omega
+    sigma_beta2 = np.var(y_z_omega) / 2
     sigma_e2 = sigma_beta2
 
     # For accelerate calculation
@@ -101,33 +103,28 @@ def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
 
     # eigenvalue decomposition of XXT, needed in n < p & l
     eigvals_xxt, eigvecs_xxt = np.linalg.eigh(XXT)  # l, ~Q
-    eigvals_xxt, eigvecs_xxt = eigvals_xxt.real, eigvecs_xxt.real
 
     if n_geq_p:
         # eigenvalue decomposition of XTX, needed in n >= p
         eigvals_xtx, eigvecs_xtx = np.linalg.eigh(XTX)  # Q
-        eigvals_xtx, eigvecs_xtx = eigvals_xtx.real, eigvecs_xtx.real
 
         # n >= p
-        def cal_Gamma():
+        def cal_mu():
             return (
                 eigvecs_xtx
-                @ np.diag(1 / (eigvals_xtx / sigma_e2 + 1 / sigma_beta2))
-                @ eigvecs_xtx.T
+                @ (eigvecs_xtx.T @ (X.T @ y_z_omega / d_.reshape(-1, 1)))
+                / sigma_e2
             )
 
-        def cal_mu():
-            return Gamma @ X.T @ (y - Z @ omega) / sigma_e2
-
-        def cal_sigma_beta2(mu):
+        def cal_sigma_beta2():
             return (
                 np.sum(sigma_e2 * sigma_beta2 / (sigma_e2 + sigma_beta2 * eigvals_xtx))
                 + np.linalg.norm(mu) ** 2
             ) / p
 
-        def cal_sigma_e2(mu):
+        def cal_sigma_e2():
             return (
-                np.linalg.norm(y - Z @ omega) ** 2
+                np.linalg.norm(y_z_omega) ** 2
                 + np.sum(
                     eigvals_xtx
                     * sigma_beta2
@@ -135,59 +132,47 @@ def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
                     / (eigvals_xtx * sigma_beta2 + sigma_e2)
                 )
                 + np.linalg.norm(X @ mu) ** 2
-                - 2 * ((y - Z @ omega).T @ X @ mu)[0, 0]
+                - 2 * (y_z_omega.T @ X @ mu)[0, 0]
             ) / n
 
     else:
         # n < p
-        def cal_Gamma():
-            # return (
-            #     eigvecs_xxt
-            #     @ np.diag(1 / (eigvals_xxt / sigma_e2 + 1 / sigma_beta2))
-            #     @ eigvecs_xxt.T
-            # )
+        def cal_mu():
             return (
-                eigvecs_xxt.T
-                @ np.diag(1 / (eigvals_xxt / sigma_e2 + 1 / sigma_beta2))
-                @ eigvecs_xxt
+                X.T
+                @ (eigvecs_xxt @ (eigvecs_xxt.T @ y_z_omega / d_.reshape(-1, 1)))
+                / sigma_e2
             )
 
-        def cal_mu():
-            return X.T @ Gamma @ (y - Z @ omega) / sigma_e2
-
-        def cal_sigma_beta2(mu):
+        def cal_sigma_beta2():
             return (
-                np.sum(sigma_e2 * sigma_beta2 / (sigma_e2 + sigma_beta2 * eigvals_xxt))
-                + np.linalg.norm(mu) ** 2
-                + (p - n) * sigma_beta2
+                np.sum(1 / d_) + np.linalg.norm(mu) ** 2 + (p - n) * sigma_beta2
             ) / p
 
-        def cal_sigma_e2(mu):
+        def cal_sigma_e2():
             return (
-                np.linalg.norm(y - Z @ omega) ** 2
-                + np.sum(
-                    eigvals_xxt
-                    * sigma_beta2
-                    * sigma_e2
-                    / (eigvals_xxt * sigma_beta2 + sigma_e2)
-                )
-                + np.linalg.norm(X @ mu) ** 2
-                - 2 * ((y - Z @ omega).T @ X @ mu)[0, 0]
+                np.linalg.norm(y_z_omega - X @ mu) ** 2 + np.sum(eigvals_xxt / d_)
             ) / n
 
     # log-likelihood
+    likelihood_const = -n / 2 * np.log(2 * np.pi)
+
     def cal_likelihood():
-        likelihood_const = -n / 2 * np.log(2 * np.pi)
         return (
             likelihood_const
-            - np.log(np.sum(sigma_beta2 * eigvals_xxt + sigma_e2)) / 2
-            - (y - Z @ omega).T
+            - np.sum(np.log(sigma_beta2 * eigvals_xxt + sigma_e2)) / 2
+            - y_z_omega.T
             @ eigvecs_xxt
             @ np.diag(1 / (sigma_beta2 * eigvals_xxt + sigma_e2))
             @ eigvecs_xxt.T
-            @ (y - Z @ omega)
+            @ y_z_omega
             / 2
         )
+
+    if mfvi:
+
+        def cal_mu():
+            return 0
 
     # Record parameters in each iteration
     max_iter += 1
@@ -208,13 +193,18 @@ def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
     convergence = False
     for iter in range(1, max_iter):
         # E step
-        Gamma = cal_Gamma()
+        d_ = (
+            eigvals_xxt / sigma_e2 + 1 / sigma_beta2
+            if not n_geq_p
+            else eigvals_xtx / sigma_e2 + 1 / sigma_beta2
+        )
         mu = cal_mu()
 
         # M step
         omega = ZTZinvZT @ (y - X @ mu)
-        sigma_beta2 = cal_sigma_beta2(mu)
-        sigma_e2 = cal_sigma_e2(mu)
+        y_z_omega = y - Z @ omega
+        sigma_beta2 = cal_sigma_beta2()
+        sigma_e2 = cal_sigma_e2()
 
         # Calculate likelihood
         likelihood_list[iter] = cal_likelihood()
@@ -235,7 +225,7 @@ def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
                 "iter: {}, log-likelihood: {:.4e}".format(iter, likelihood_list[iter])
             )
             print("beta: {:.4e}".format(np.sum(mu**2)))
-            print("Gamma: {:.4e}".format(np.sum(Gamma)))
+            # print("Gamma: {:.4e}".format(np.sum(Gamma)))
             print("sigma_beta^2: {:.4e}".format(sigma_beta2))
             print("sigma_e^2: {:.4e}".format(sigma_e2))
             print("--------------------------------------")
@@ -328,7 +318,7 @@ if __name__ == "__main__":
         sigma_beta2_list,
         sigma_e2_list,
         beta_post_mean,
-    ) = lmm_em(y, X, Z, max_iter=500)
+    ) = lmm_em(y, X, Z, mfvi=True, tol=1e-5, max_iter=2000)
     end_time = time.time()
     print(
         "Run time: %d min %.2f s"

@@ -179,11 +179,9 @@ $$\begin{equation}
 However, we can not calculate the $\log |\mathbf{\Sigma}|$ and $\mathbf{\Sigma}^{-1}$ in likelihood directly since they would cause numerical overflow[^2]. Instead, we use the eigenvalue decomposition of $\mathbf{X}\mathbf{X}^T$ to calculate the log determinant of $\mathbf{\Sigma}$[^3]. Let $\mathbf{X}\mathbf{X}^T = \tilde{\mathbf{Q}} \tilde{\mathbf{\Lambda}} \tilde{\mathbf{Q}}^T$, where $\tilde{\mathbf{Q}}$ is an orthogonal matrix and $\tilde{\mathbf{\Lambda}}= \text{diag} \{ \tilde{\lambda}_1, \dots, \tilde{\lambda}_n\}$ is a diagonal matrix with the eigenvalues of $\mathbf{X}\mathbf{X}^T$ on the diagonal. Then we have
 $$\begin{equation}
 \begin{split}
-\log |\Sigma| &= \log |\sigma_\beta^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n|\\
-&= \sum_{i=1}^n \log (\sigma_\beta^2 \tilde{\lambda}_i + \sigma_e^2)\\
-\Sigma^{-1} &= \left(\sigma_\beta^2 \mathbf{X}\mathbf{X}^T + \sigma_e^2 \mathbf{I}_n\right)^{-1}\\
-&= \left(\sigma_\beta^2 \tilde{\mathbf{Q}} \tilde{\mathbf{\Lambda}} \tilde{\mathbf{Q}}^T + \sigma_e^2 \mathbf{I}_n\right)^{-1}\\
-&= \tilde{\mathbf{Q}} \left(\sigma_\beta^2 \tilde{\mathbf{\Lambda}} + \sigma_e^2 \mathbf{I}_n\right)^{-1} \tilde{\mathbf{Q}}^T
+\Sigma &= \tilde{\mathbf{Q}} \left(\sigma_\beta^2 \tilde{\mathbf{\Lambda}} + \sigma_e^2 \mathbf{I}_n\right) \tilde{\mathbf{Q}}^T\\
+\log |\Sigma| &= \sum_{i=1}^n \log (\sigma_\beta^2 \tilde{\lambda}_i + \sigma_e^2)\\
+\Sigma^{-1} &= \tilde{\mathbf{Q}} \left(\sigma_\beta^2 \tilde{\mathbf{\Lambda}} + \sigma_e^2 \mathbf{I}_n\right)^{-1} \tilde{\mathbf{Q}}^T
 \end{split}\end{equation}$$
 
 where $\left(\sigma_\beta^2 \tilde{\mathbf{\Lambda}} + \sigma_e^2 \mathbf{I}_n\right)^{-1}$ is a diagonal matrix. The inverse of a diagonal matrix is the reciprocal of the diagonal elements.
