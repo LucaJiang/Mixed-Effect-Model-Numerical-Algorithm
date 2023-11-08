@@ -154,6 +154,12 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
                 np.linalg.norm(y_z_omega - X @ mu) ** 2 + np.sum(eigvals_xxt / d_)
             ) / n
 
+    if mfvi:
+
+        def cal_mu():
+            sigma_j2 = 1 / (np.linalg.norm(X, axis=0) ** 2 / sigma_e2 + 1 / sigma_beta2)
+            return (sigma_j2 * (y_z_omega.T @ X) / sigma_e2).reshape(-1, 1)
+
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
 
@@ -168,11 +174,6 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
             @ y_z_omega
             / 2
         )
-
-    if mfvi:
-
-        def cal_mu():
-            return 0
 
     # Record parameters in each iteration
     max_iter += 1
@@ -193,11 +194,12 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
     convergence = False
     for iter in range(1, max_iter):
         # E step
-        d_ = (
-            eigvals_xxt / sigma_e2 + 1 / sigma_beta2
-            if not n_geq_p
-            else eigvals_xtx / sigma_e2 + 1 / sigma_beta2
-        )
+        if not mfvi:
+            d_ = (
+                eigvals_xxt / sigma_e2 + 1 / sigma_beta2
+                if not n_geq_p
+                else eigvals_xtx / sigma_e2 + 1 / sigma_beta2
+            )
         mu = cal_mu()
 
         # M step
@@ -318,7 +320,7 @@ if __name__ == "__main__":
         sigma_beta2_list,
         sigma_e2_list,
         beta_post_mean,
-    ) = lmm_em(y, X, Z, mfvi=True, tol=1e-5, max_iter=2000)
+    ) = lmm_em(y, X, Z, mfvi=True, tol=1e-5, max_iter=200)
     end_time = time.time()
     print(
         "Run time: %d min %.2f s"
