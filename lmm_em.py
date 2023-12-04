@@ -1,4 +1,5 @@
 # Use EM to solve linear mixed model
+from re import T
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -158,7 +159,9 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
 
         def cal_mu():
             sigma_j2 = 1 / (np.linalg.norm(X, axis=0) ** 2 / sigma_e2 + 1 / sigma_beta2)
-            return (sigma_j2 * (y_z_omega.T @ X) / sigma_e2).reshape(-1, 1)
+            return (sigma_j2 * ((y_z_omega - X @ mu / 2).T @ X) / sigma_e2).reshape(
+                -1, 1
+            )
 
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
@@ -190,11 +193,12 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
     sigma_e2_list[iter] = sigma_e2
 
     # EM algorithm
-    print("EM algorithm starts")
+    print("EM algorithm starts" if not mfvi else "EM algorithm with MFVI starts")
     convergence = False
     for iter in range(1, max_iter):
         # E step
-        if not mfvi:
+        # if not mfvi:
+        if True:
             d_ = (
                 eigvals_xxt / sigma_e2 + 1 / sigma_beta2
                 if not n_geq_p
@@ -303,8 +307,8 @@ def visual_em(
 
 if __name__ == "__main__":
     # load data
-    # data_name = "fake_data"
-    data_name = "XYZ_MoM"
+    data_name = "fake_data"
+    # data_name = "XYZ_MoM"
     data = pd.read_table("data/" + data_name + ".txt", sep="\t", header=0).values
 
     y = data[:, 0].reshape(-1, 1)
