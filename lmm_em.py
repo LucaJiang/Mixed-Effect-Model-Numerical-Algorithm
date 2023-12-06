@@ -156,12 +156,22 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
             ) / n
 
     if mfvi:
-
+        # MFVI only change the calculation of mu
         def cal_mu():
-            sigma_j2 = 1 / (np.linalg.norm(X, axis=0) ** 2 / sigma_e2 + 1 / sigma_beta2)
-            return (sigma_j2 * ((y_z_omega - X @ mu / 2).T @ X) / sigma_e2).reshape(
-                -1, 1
-            )
+            sigma_j2 = 1 / (np.diag(XTX) / sigma_e2 + 1 / sigma_beta2).reshape(-1, 1)
+            ## update mu one by one
+            # for j in range(p):
+            #     X_ = X.copy()
+            #     X_[:, j] = 0
+            #     mu[j] = 0
+            #     mu[j] = sigma_j2[j] / sigma_e2 * (X[:, j].T @ (y_z_omega - X_ @ mu))
+            # return mu.reshape(-1, 1)
+            ## update mu at once
+            return (
+                sigma_j2
+                / sigma_e2
+                * (X.T @ (y_z_omega - X @ (np.ones((p, p)) - np.eye(p)) @ mu))
+            ).reshape(-1, 1)
 
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
@@ -197,13 +207,11 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
     convergence = False
     for iter in range(1, max_iter):
         # E step
-        # if not mfvi:
-        if True:
-            d_ = (
-                eigvals_xxt / sigma_e2 + 1 / sigma_beta2
-                if not n_geq_p
-                else eigvals_xtx / sigma_e2 + 1 / sigma_beta2
-            )
+        d_ = (
+            eigvals_xxt / sigma_e2 + 1 / sigma_beta2
+            if not n_geq_p
+            else eigvals_xtx / sigma_e2 + 1 / sigma_beta2
+        )
         mu = cal_mu()
 
         # M step
@@ -265,6 +273,7 @@ def visual_em(
     omega_list,
     beta_post_mean,
     img_name,
+    is_mfvi,
 ):
     # subplot
     from matplotlib.ticker import MaxNLocator
@@ -301,14 +310,18 @@ def visual_em(
 
     plt.suptitle("EM Algorithm for Linear Mixed Model")
     plt.tight_layout()
+    if is_mfvi:
+        img_name += "_mfvi"
     plt.savefig("img/lmm_em" + img_name + ".png")
     plt.show()
 
 
 if __name__ == "__main__":
     # load data
-    data_name = "fake_data"
-    # data_name = "XYZ_MoM"
+    # data_name = "fake_data"
+    data_name = "XYZ_MoM"
+    # is_mfvi = False
+    is_mfvi = True
     data = pd.read_table("data/" + data_name + ".txt", sep="\t", header=0).values
 
     y = data[:, 0].reshape(-1, 1)
@@ -324,7 +337,7 @@ if __name__ == "__main__":
         sigma_beta2_list,
         sigma_e2_list,
         beta_post_mean,
-    ) = lmm_em(y, X, Z, mfvi=True, tol=1e-5, max_iter=200)
+    ) = lmm_em(y, X, Z, mfvi=is_mfvi, tol=1e-3, max_iter=100)
     end_time = time.time()
     print(
         "Run time: %d min %.2f s"
@@ -344,4 +357,5 @@ if __name__ == "__main__":
         omega_list,
         beta_post_mean,
         data_name,
+        is_mfvi,
     )

@@ -42,13 +42,13 @@ we can calculate the expectation of the complete data log-likelihood with respec
 $$\begin{equation}\begin{split}
 \mathbb{E}_{q(\mathbf{\beta})}[\ell(\mathbf{\Theta}, \mathbf{\beta})] &= \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})] \\
 &\propto \mathbb{E}_{q(\mathbf{\beta})}[-\frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}] \\
-&\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \left(\mathbf{X}_{.j}\beta_j\right)^T \mathbf{X}\beta - \left(\left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)^T \mathbf{X}\right)_{.j}\beta_j\right.\right.\\
+% &\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \left(\mathbf{X}_{.j}\beta_j\right)^T \mathbf{X}\beta - \left(\left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)^T \mathbf{X}\right)_{.j}\beta_j\right.\right.\\
 &\quad \left.\left.-\beta_j\left(\mathbf{X}^T \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)\right)_{j.} \right)- \frac{1}{2\sigma_\beta^2} \beta_j^2\right] \\
-&\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \mathbf{X}_{.j}^T \mathbf{X}_{.j} \beta_j^2 +\mathbf{X}_{.j}^T\mathbf{X}_{.-j}\mathbf{\beta}_{-j}\beta_j\right.\right.\\
+&\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \mathbf{X}_{.j}^T \mathbf{X}_{.j} \beta_j^2 +2\mathbf{X}_{.j}^T\mathbf{X}_{.-j}\mathbf{\beta}_{-j}\beta_j\right.\right.\\
 &\quad\left.\left. - 2\left(\left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)^T \mathbf{X}\right)_{.j}\beta_j\right)- \frac{1}{2\sigma_\beta^2} \beta_j^2\right] \\
 &\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{\left(\beta_j-\mu_j\right)^2}{2\sigma_j^2}\right]
 \end{split}\end{equation}$$
-where $\mathbf{X}_{.j}$ is the $j$ th column of $\mathbf{X}$, $\mathbf{X}_{j.}$ is the $j$ th row of $\mathbf{X}$, $\sigma_j^2=1/\left(\frac{\mathbf{X}_{.j}^T \mathbf{X}_{.j}}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}\right)$ and $\mu_j=\sigma_j^2/\sigma_e^2 \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega} +\mathbf{X}_{.-j}\mathbf{\beta}_{-j}/2\right)^T\mathbf{X}_{.j}$. And $\mathbf{X}_{.-j}$ is the matrix $\mathbf{X}$ where the $j$ th column is 0, and $\mathbf{\beta}_{-j}$ is the vector $\mathbf{\beta}$ where the $j$ th element is 0.
+where $\mathbf{X}_{.j}$ is the $j$ th column of $\mathbf{X}$, $\mathbf{X}_{j.}$ is the $j$ th row of $\mathbf{X}$, $\sigma_j^2=1/\left(\frac{\mathbf{X}_{.j}^T \mathbf{X}_{.j}}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}\right)$ and $\mu_j=\sigma_j^2/\sigma_e^2 \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega} -\mathbf{X}_{.-j}\mathbf{\mu}_{-j}\right)^T\mathbf{X}_{.j}$. And $\mathbf{X}_{.-j}$ is the matrix $\mathbf{X}$ where the $j$ th column is 0, and $\mathbf{\mu}_{-j}$ is the vector $\mathbf{\mu}$ where the $j$ th element is 0.
 
 Therefore, the posterior distribution of $\beta_j$ is given by $\mathcal{N}(\mu_j, \sigma_j^2) $.
 
@@ -60,8 +60,18 @@ $$\begin{equation}
 &= (\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) - 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \\&\quad + \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})+ \mathbf{\mu}^T \mathbf{X}^T \mathbf{X}\mathbf{\mu}\\
 \mathbb{E}_{q(\mathbf{\beta})}[\mathbf{\beta}^T \mathbf{\beta}] &= \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}
 \end{split}\end{equation}$$
-???
-where $\mathbf{\mu}=[\mu_1, \dots, \mu_p]^T= \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}+\mathbf{X}\mathbf{\mu}/2)/\sigma_e^2$ and $\mathbf{\Gamma}=\text{diag}(\sigma_1^2, \dots, \sigma_p^2)=\left(\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2}\right)^{-1}$. Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
+<!-- ???
+$\mu_j=\sigma_j^2/\sigma_e^2 \mathbf{X}_{.j}^T \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega} +\mathbf{X}_{.-j}\mathbf{\beta}_{-j}/2\right)$, $\mathbf{\mu}= \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}+\mathbf{X}\mathbf{\mu}(1-\mathbf{1}_p)/2)/\sigma_e^2$.
+where $1-\mathbf{1}_p=
+\begin{pmatrix}
+0 & 1 & \cdots & 1 \\
+1 & 0 & \cdots & 1 \\
+\vdots & \vdots & \ddots & \vdots \\
+1 & 1 & \cdots & 0
+\end{pmatrix}_{p*p}$
+??? -->
+
+where $\mathbf{\mu}=[\mu_1, \dots, \mu_p]^T$ and $\mathbf{\Gamma}=\text{diag}(\sigma_1^2, \dots, \sigma_p^2)=\left(\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2}\right)^{-1}$. Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
 
 Then, we can calculate the Q-function:
 $$\begin{equation}\begin{split}
@@ -99,7 +109,6 @@ $$\begin{equation}\begin{split}
 &= \frac{1}{\sigma_e^2} \mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}) =: 0 \\
 \Rightarrow \hat{\mathbf{\omega}} &= \left(\mathbf{Z}^T \mathbf{Z}\right)^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\mu})\\
 \end{split}\end{equation}$$
-
 
 ## EM Algorithm with MFVI
 Using the following algorithm to estimate $\mathbb{E}(\mathbf{\beta})$ in the
