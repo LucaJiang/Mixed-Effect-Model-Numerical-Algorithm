@@ -1,5 +1,4 @@
 # Use EM to solve linear mixed model
-from re import T
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,14 +8,13 @@ import time
 sns.set_style("whitegrid")
 
 
-def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
+def lmm_em(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
     """
     Input:
     y: n x 1, response
     X: n x p, random effect
     Z: n x c, fixed effect
-    mfvi: bool, mean field variational inference in E step, default False
-    tol: float, tolerance for convergence, default 1e-6
+    tol: float, tolerance for convergence, default 1e-3
     max_iter: int, maximum number of iterations, default 10
     verbose: bool, print information, default True
 
@@ -155,24 +153,6 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
                 np.linalg.norm(y_z_omega - X @ mu) ** 2 + np.sum(eigvals_xxt / d_)
             ) / n
 
-    if mfvi:
-        # MFVI only change the calculation of mu
-        def cal_mu():
-            sigma_j2 = 1 / (np.diag(XTX) / sigma_e2 + 1 / sigma_beta2).reshape(-1, 1)
-            ## update mu one by one
-            # for j in range(p):
-            #     X_ = X.copy()
-            #     X_[:, j] = 0
-            #     mu[j] = 0
-            #     mu[j] = sigma_j2[j] / sigma_e2 * (X[:, j].T @ (y_z_omega - X_ @ mu))
-            # return mu.reshape(-1, 1)
-            ## update mu at once
-            return (
-                sigma_j2
-                / sigma_e2
-                * (X.T @ (y_z_omega - X @ (np.ones((p, p)) - np.eye(p)) @ mu))
-            ).reshape(-1, 1)
-
     # log-likelihood
     likelihood_const = -n / 2 * np.log(2 * np.pi)
 
@@ -203,7 +183,7 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
     sigma_e2_list[iter] = sigma_e2
 
     # EM algorithm
-    print("EM algorithm starts" if not mfvi else "EM algorithm with MFVI starts")
+    print("EM algorithm starts")
     convergence = False
     for iter in range(1, max_iter):
         # E step
@@ -238,8 +218,7 @@ def lmm_em(y, X, Z, mfvi=False, tol=1e-6, max_iter=10, verbose=True):
             print(
                 "iter: {}, log-likelihood: {:.4e}".format(iter, likelihood_list[iter])
             )
-            print("beta: {:.4e}".format(np.sum(mu**2)))
-            # print("Gamma: {:.4e}".format(np.sum(Gamma)))
+            print("beta: {:.4e}".format(np.mean(mu)))
             print("sigma_beta^2: {:.4e}".format(sigma_beta2))
             print("sigma_e^2: {:.4e}".format(sigma_e2))
             print("--------------------------------------")
@@ -273,7 +252,6 @@ def visual_em(
     omega_list,
     beta_post_mean,
     img_name,
-    is_mfvi,
 ):
     # subplot
     from matplotlib.ticker import MaxNLocator
@@ -310,8 +288,6 @@ def visual_em(
 
     plt.suptitle("EM Algorithm for Linear Mixed Model")
     plt.tight_layout()
-    if is_mfvi:
-        img_name += "_mfvi"
     plt.savefig("img/lmm_em" + img_name + ".png")
     plt.show()
 
@@ -320,8 +296,6 @@ if __name__ == "__main__":
     # load data
     # data_name = "fake_data"
     data_name = "XYZ_MoM"
-    # is_mfvi = False
-    is_mfvi = True
     data = pd.read_table("data/" + data_name + ".txt", sep="\t", header=0).values
 
     y = data[:, 0].reshape(-1, 1)
@@ -337,18 +311,12 @@ if __name__ == "__main__":
         sigma_beta2_list,
         sigma_e2_list,
         beta_post_mean,
-    ) = lmm_em(y, X, Z, mfvi=is_mfvi, tol=1e-3, max_iter=100)
+    ) = lmm_em(y, X, Z, tol=1e-3, max_iter=1000)
     end_time = time.time()
     print(
         "Run time: %d min %.2f s"
         % ((end_time - start_time) // 60, (end_time - start_time) % 60)
     )
-
-    # run EM algorithm with limited data
-    # MAX_LENGTH = 200
-    # MAX_X_LENGTH = 100
-    # likelihood_list, omega_list, sigma_beta2_list, sigma_e2_list, beta_post_mean = lmm_em(
-    #     y[:MAX_LENGTH], X[:MAX_LENGTH, :MAX_X_LENGTH], Z[:MAX_LENGTH, :])
 
     visual_em(
         likelihood_list,
@@ -357,5 +325,4 @@ if __name__ == "__main__":
         omega_list,
         beta_post_mean,
         data_name,
-        is_mfvi,
     )

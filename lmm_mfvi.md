@@ -17,7 +17,7 @@ In the previous section, we have applied the EM algorithm to the mixed effect mo
 Assume $\Theta=\{\mathbf{\omega}, \sigma_\beta^2, \sigma_e^2\}$ has been estimated in the M-step. In order to use Mean-Field Variational Inference (MFVI) to find a $q(\mathbf{\beta})$ which approximate the true posterior $p(\mathbf{\beta}|\mathbf{y})$. We need to find the optimal $q(\mathbf{\beta})$ that minimizes the KL divergence between $q(\mathbf{\beta})$ and $p(\mathbf{\beta}|\mathbf{y})$, which is equivalent to maximizing the ELBO (Evidence Lower BOund) function:
 $$\begin{equation}\begin{split}
 \text{ELBO}(\mathbf{q}) &=: \mathbb{E}_{q(\mathbf{\beta})}[\log \frac{p(\mathbf{y}, q(\mathbf{\beta}))}{q(\mathbf{\beta})}] \\
-&=\mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y})] - \text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta}))\\
+&=\mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}), \mathbf{\beta}] - \text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta}|\mathbf{y}))\\
 \text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta})) &= -\mathbb{E}_{q(\mathbf{\beta})}[\log \frac{p(\mathbf{\beta}|\mathbf{y})}{q(\mathbf{\beta})}] \\
 &= -\mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{\beta}|\mathbf{y})] + \mathbb{E}_{q(\mathbf{\beta})}[\log q(\mathbf{\beta})]
 \end{split}\end{equation}$$
@@ -42,8 +42,6 @@ we can calculate the expectation of the complete data log-likelihood with respec
 $$\begin{equation}\begin{split}
 \mathbb{E}_{q(\mathbf{\beta})}[\ell(\mathbf{\Theta}, \mathbf{\beta})] &= \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})] \\
 &\propto \mathbb{E}_{q(\mathbf{\beta})}[-\frac{1}{2\sigma_e^2} \|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2 - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}] \\
-% &\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \left(\mathbf{X}_{.j}\beta_j\right)^T \mathbf{X}\beta - \left(\left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)^T \mathbf{X}\right)_{.j}\beta_j\right.\right.\\
-&\quad \left.\left.-\beta_j\left(\mathbf{X}^T \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)\right)_{j.} \right)- \frac{1}{2\sigma_\beta^2} \beta_j^2\right] \\
 &\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{1}{2\sigma_e^2} \left( \mathbf{X}_{.j}^T \mathbf{X}_{.j} \beta_j^2 +2\mathbf{X}_{.j}^T\mathbf{X}_{.-j}\mathbf{\beta}_{-j}\beta_j\right.\right.\\
 &\quad\left.\left. - 2\left(\left(\mathbf{y}-\mathbf{Z}\mathbf{\omega}\right)^T \mathbf{X}\right)_{.j}\beta_j\right)- \frac{1}{2\sigma_\beta^2} \beta_j^2\right] \\
 &\propto \sum_{j=1}^{p} \mathbb{E}_{q(\beta_j)}\left[-\frac{\left(\beta_j-\mu_j\right)^2}{2\sigma_j^2}\right]
@@ -81,32 +79,49 @@ $$\begin{equation}\begin{split}
 &= -\frac{n}{2} \log (2\pi \sigma_e^2) - \frac{1}{2\sigma_e^2} \mathbb{E}_{q(\mathbf{\beta})}[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2]\\
 &\quad -\frac{p}{2} \log (2\pi \sigma_\beta^2 ) - \frac{1}{2\sigma_\beta^2} \mathbb{E}_{q(\mathbf{\beta})}[\mathbf{\beta}^T \mathbf{\beta}] \\
 &= -\frac{n}{2} \log (2\pi \sigma_e^2) - \frac{1}{2\sigma_e^2} \left[(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) - 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \right.\\
-&\quad \left.+ \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})+ (\mathbf{\mu}^T \mathbf{X}^T \mathbf{X}\mathbf{\mu})\right]-\frac{p}{2} \log (2\pi \sigma_\beta^2 ) - \frac{1}{2\sigma_\beta^2} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]
+&\quad \left.+ \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})+ (\mathbf{\mu}^T \mathbf{X}^T \mathbf{X}\mathbf{\mu})\right]-\frac{p}{2} \log (2\pi \sigma_\beta^2 ) - \frac{1}{2\sigma_\beta^2} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]\\
+&= -\frac{n}{2} \log (2\pi \sigma_e^2) - \frac{1}{2\sigma_e^2} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})\right]\\
+&\quad-\frac{p}{2} \log (2\pi \sigma_\beta^2 ) - \frac{1}{2\sigma_\beta^2} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]\\
 \end{split}\end{equation}$$
 and the ELBO:
 $$\begin{equation}\begin{split}
-\text{ELBO} &= \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})] - \text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta})) \\
+\text{ELBO} &= \mathcal{Q}(\mathbf{q}) - \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{\beta}| \mathbf{\Theta})] \\
+&= \mathcal{Q}(\mathbf{q}) - \mathbb{E}_{q(\mathbf{\beta})}[-\frac{p}{2} \log (2\pi \sigma_\beta^2 ) - \frac{1}{2\sigma_\beta^2} \mathbf{\beta}^T \mathbf{\beta}] \\
+&= \mathcal{Q}(\mathbf{q}) +\frac{p}{2} \log (2\pi \sigma_\beta^2 ) + \frac{1}{2\sigma_\beta^2} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]\\
+&= -\frac{n}{2} \log (2\pi \sigma_e^2) - \frac{1}{2\sigma_e^2} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})\right]
+\end{split}\end{equation}$$
+
+$$\begin{equation}\begin{split}
+\text{ELBO} &= \mathbb{E}_{q(\mathbf{\beta})}[\log p(\mathbf{y}, \mathbf{\beta}| \mathbf{\Theta})] - \text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta})) ???\\
 &= \mathcal{Q}(\mathbf{q}) + \frac{1}{2}\log |2\pi\mathbf{\Gamma}|
+\end{split}\end{equation}$$
+
+Note: The KL divergence between the posterior $q(\mathbf{\beta})$ and the prior $p(\mathbf{\beta})$ is given by:[^1]
+[^1]: [KL-divergence between 2 gaussian distributions](https://mr-easy.github.io/2020-04-16-kl-divergence-between-2-gaussian-distributions/)
+$$\begin{equation}\begin{split}
+\text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta}))
+&=\frac{1}{2}\left[\log\frac{|\Sigma_q|}{|\Sigma_p|} - p + (\boldsymbol{\mu_p}-\boldsymbol{\mu_q})^T\Sigma_q^{-1}(\boldsymbol{\mu_p}-\boldsymbol{\mu_q}) + tr\left\{\Sigma_q^{-1}\Sigma_p\right\}\right]
+\end{split}\end{equation}$$
+
+$$\begin{equation}\begin{split}
+\text{KL}(q(\mathbf{\beta})||p(\mathbf{\beta}))
+% &=\frac{1}{2}\left[\log\frac{|\Sigma_q|}{|\Sigma_p|} - p + (\boldsymbol{\mu_p}-\boldsymbol{\mu_q})^T\Sigma_q^{-1}(\boldsymbol{\mu_p}-\boldsymbol{\mu_q}) + tr\left\{\Sigma_q^{-1}\Sigma_p\right\}\right]\\
+&= \frac{1}{2}\left[\log\frac{|\mathbf{\Gamma}|}{\sigma_\beta^{2p}}-p+\mathbf{\mu}^T\mathbf{\Gamma}^{-1}\mathbf{\mu}+\sigma_\beta^{2}\text{tr}\left(\mathbf{\Gamma}^{-1}\right)\right]\\
+&= \frac{1}{2}\left[\sum_{j=1}^{p}\log\sigma_j^2 -p\log\sigma_\beta^2+\sum_{j=1}^{p}\frac{\mu_j^2}{\sigma_j^2}+\sum_{j=1}^{p}\frac{\sigma_\beta^{2}}{\sigma_j^2}\right]
 \end{split}\end{equation}$$
 
 ### M-step
 In the M-step, we need to find the optimal $\Theta$ that maximizes the Q-function.
 <!-- $\mathbf{\mu}=[\mu_1, \dots, \mu_p]^T= \mathbf{\Gamma} \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}+\mathbf{X}\mathbf{\mu}/2)/\sigma_e^2$ and $\mathbf{\Gamma}=\text{diag}(\sigma_1^2, \dots, \sigma_p^2)=\left(\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2}\right)^{-1}$. -->
+
 $$\begin{equation}\begin{split}
-\frac{\partial \mathbf{\Gamma}}{\partial \sigma_\beta^2} &= \frac{\mathbf{I}_p}{\sigma_\beta^4} \mathbf{\Gamma}^2 ,\quad \frac{\partial \mathbf{\Gamma}}{\partial \sigma_e^2} = -\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^4} \mathbf{\Gamma}^2 \\
-\frac{\partial \mathbf{\mu}}{\partial \sigma_\beta^2} &= \frac{\mathbf{I}_p}{\sigma_\beta^4} \mathbf{\Gamma}^2 \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}+\mathbf{X}\mathbf{\mu}/2)/\sigma_e^2 ,\quad \frac{\partial \mathbf{\mu}}{\partial \sigma_e^2} = -\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^4} \mathbf{\Gamma}^2 \mathbf{X}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}+\mathbf{X}\mathbf{\mu}/2)/\sigma_e^2
-\end{split}\end{equation}$$
-$$\begin{equation}\begin{split}
-\frac{\partial \mathcal{Q}}{\partial \sigma_\beta^2} &= -\frac{p}{2\sigma_\beta^2} + \frac{1}{2\sigma_\beta^4} \mathbb{E}_{q(\mathbf{\beta})}[\mathbf{\beta}^T \mathbf{\beta}] \\
-&= -\frac{p}{2\sigma_\beta^2} + \frac{1}{2\sigma_\beta^4} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]=:0 \\
-\Rightarrow \hat{\sigma}_\beta^2 &= \frac{1}{p} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]\\
-\frac{\partial \mathcal{Q}}{\partial \sigma_e^2} &= -\frac{n}{2\sigma_e^2} + \frac{1}{2\sigma_e^4} \mathbb{E}_{q(\mathbf{\beta})}[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta}\|^2] \\
-&= -\frac{n}{2\sigma_e^2} + \frac{1}{2\sigma_e^4} \left[(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) - 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \right.\\
-&\quad \left.+ \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})+ (\mathbf{\mu}^T \mathbf{X}^T \mathbf{X}\mathbf{\mu})\right]=:0 \\
-\Rightarrow \hat{\sigma}_e^2 &= \frac{1}{n} \left[(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega}) - 2(\mathbf{y} - \mathbf{Z}\mathbf{\omega})^T \mathbf{X}\mathbf{\mu} \right.\\
-&\quad \left.+ \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})+ (\mathbf{\mu}^T \mathbf{X}^T \mathbf{X}\mathbf{\mu})\right]\\
-\frac{\partial \mathcal{Q}}{\partial \mathbf{\omega}} &= \frac{1}{\sigma_e^2} \mathbb{E}_{q(\mathbf{\beta})}[\mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\beta})] \\
-&= \frac{1}{\sigma_e^2} \mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}) =: 0 \\
+\frac{\partial \mathcal{Q}}{\partial \sigma_\beta^2} &= -\frac{p}{2\sigma_\beta^2} + \frac{1}{2\sigma_\beta^4} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]=:0 \\
+\Rightarrow \hat{\sigma}_\beta^2 &= \frac{1}{p} \left[\text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}\right]=\frac{1}{p} \left[\sum_{j=1}^{p} \sigma_j^2 + \mathbf{\mu}^T \mathbf{\mu}\right]\\
+\frac{\partial \mathcal{Q}}{\partial \sigma_e^2} &= -\frac{n}{2\sigma_e^2} + \frac{1}{2\sigma_e^4} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})\right]=:0 \\
+\Rightarrow \hat{\sigma}_e^2 &= \frac{1}{n} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \text{tr}(\mathbf{X}^T \mathbf{\Gamma}\mathbf{X})\right]\\
+&=\frac{1}{n} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \text{tr}(\mathbf{X}^T\mathbf{X} \mathbf{\Gamma})\right]\\
+&= \frac{1}{n} \left[\|\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}\|^2 + \sum_{j=1}^{p} \text{diag}(\mathbf{X}^T\mathbf{X})_j \sigma_j^2\right]\\
+\frac{\partial \mathcal{Q}}{\partial \mathbf{\omega}} &= \frac{1}{\sigma_e^2} \mathbf{Z}^T (\mathbf{y} - \mathbf{Z}\mathbf{\omega} - \mathbf{X}\mathbf{\mu}) =: 0 \\
 \Rightarrow \hat{\mathbf{\omega}} &= \left(\mathbf{Z}^T \mathbf{Z}\right)^{-1} \mathbf{Z}^T (\mathbf{y} - \mathbf{X}\mathbf{\mu})\\
 \end{split}\end{equation}$$
 
