@@ -48,7 +48,7 @@ $$\begin{equation}\begin{split}
 \end{split}\end{equation}$$
 where $\mathbf{X}_{.j}$ is the $j$ th column of $\mathbf{X}$, $\mathbf{X}_{j.}$ is the $j$ th row of $\mathbf{X}$, $\sigma_j^2=1/\left(\frac{\mathbf{X}_{.j}^T \mathbf{X}_{.j}}{\sigma_e^2} + \frac{1}{\sigma_\beta^2}\right)$ and $\mu_j=\sigma_j^2/\sigma_e^2 \left(\mathbf{y}-\mathbf{Z}\mathbf{\omega} -\mathbf{X}_{.-j}\mathbf{\mu}_{-j}\right)^T\mathbf{X}_{.j}$. And $\mathbf{X}_{.-j}$ is the matrix $\mathbf{X}$ where the $j$ th column is 0, and $\mathbf{\mu}_{-j}$ is the vector $\mathbf{\mu}$ where the $j$ th element is 0.
 
-Therefore, the posterior distribution of $\beta_j$ is given by $\mathcal{N}(\mu_j, \sigma_j^2) $.
+Therefore, the posterior distribution of $\beta_j$ is given by $\mathcal{N}(\mu_j, \sigma_j^2) $. And the posterior distribution of $\mathbf{\beta}$ is given by $\mathcal{N}(\mathbf{\mu}, \mathbf{\Gamma}) $, where $\mathbf{\mu}=[\mu_1, \dots, \mu_p]^T$ and $\mathbf{\Gamma}=\text{diag}(\sigma_1^2, \dots, \sigma_p^2)=\left(\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2}\right)^{-1}$.
 
 ### Q-function and ELBO
 To calculate the Q-function, we need to calculate the expectation of the complete data log-likelihood with respect to the posterior distribution of $\mathbf{\beta}$. Therefore, we need to calculate the following expectation:
@@ -69,7 +69,7 @@ where $1-\mathbf{1}_p=
 \end{pmatrix}_{p*p}$
 ??? -->
 
-where $\mathbf{\mu}=[\mu_1, \dots, \mu_p]^T$ and $\mathbf{\Gamma}=\text{diag}(\sigma_1^2, \dots, \sigma_p^2)=\left(\frac{\text{diag}(\mathbf{X}^T \mathbf{X})}{\sigma_e^2} + \frac{\mathbf{I}_p}{\sigma_\beta^2}\right)^{-1}$. Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
+Note that $\mathbb{E}[\mathbf{\beta}^T \mathbf{\beta}] = \text{tr}(\mathbb{V}[\mathbf{\beta}]) + \mathbb{E}[\mathbf{\beta}]^T \mathbb{E}[\mathbf{\beta}] = \text{tr}(\mathbf{\Gamma}) + \mathbf{\mu}^T \mathbf{\mu}$ and $\mathbb{E}[(\mathbf{X}\mathbf{\beta})^T (\mathbf{X}\mathbf{\beta})] = \text{tr}(\mathbf{X}\mathbf{\Gamma} \mathbf{X}^T) + (\mathbf{X}\mathbf{\mu})^T (\mathbf{X}\mathbf{\mu}).$
 
 Then, we can calculate the Q-function:
 $$\begin{equation}\begin{split}
