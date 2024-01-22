@@ -91,13 +91,14 @@ def lmm_em_mfvi(y, X, Z, tol=1e-3, max_iter=10, verbose=True):
 
     def cal_elbo():
         # return 0
-        Q_function = (
-            -n / 2 * np.log(2 * np.pi * sigma_e2)
-            - sigma_e2_new * n / (2 * sigma_e2)
-            - p / 2 * np.log(2 * np.pi * sigma_beta2)
-            - sigma_beta2_new * p / (2 * sigma_beta2)
-        )
-        return Q_function + np.sum(np.log(2 * np.pi * sigma_j2)) / 2
+        # Q_function = (
+        #     -n / 2 * np.log(2 * np.pi * sigma_e2)
+        #     - sigma_e2_new * n / (2 * sigma_e2)
+        #     - p / 2 * np.log(2 * np.pi * sigma_beta2)
+        #     - sigma_beta2_new * p / (2 * sigma_beta2)
+        # )
+        # return Q_function + np.sum(np.log(2 * np.pi * sigma_j2)) / 2
+        return -n / 2 * np.log(2 * np.pi * sigma_e2) - sigma_e2_new * n / (2 * sigma_e2)
 
     # Record parameters in each iteration
     max_iter += 1
