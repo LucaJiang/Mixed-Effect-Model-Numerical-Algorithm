@@ -1,4 +1,5 @@
 import os, time, argparse
+import jax
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,13 +18,13 @@ def generate_data(n, p, sigma_beta2, sigma_epsilon2):
     """
     Y=X*beta+epsilon
     """
-    np.random.seed(0)
     X = np.random.randn(n, p)
-    mu = np.random.randn(p, 1)
-    beta = np.random.randn(p, 1) * sigma_beta2**0.5 + mu
+    # mu = np.random.randn(p, 1)
+    beta = np.random.randn(p, 1) * sigma_beta2**0.5  # + mu
     epsilon = np.random.randn(n, 1) * sigma_epsilon2**0.5
     Y = X @ beta + epsilon
-    return dict(X=X, Y=Y, mu=mu, beta=beta, epsilon=epsilon)
+    print("beta true mean: ", beta.mean())
+    return dict(X=X, Y=Y, beta=beta, epsilon=epsilon)
 
 
 def lm(X, Y):
@@ -39,23 +40,35 @@ def lm(X, Y):
         sigma_beta2_post: posterior variance of beta
         sigma_epsilon2_post: posterior variance of epsilon
     """
-    _, p = X.shape
+    n, p = X.shape
     # beta
-    mu = numpyro.sample("mu", dist.Normal(0, 1).expand([p, 1]))
-    sigma_beta2 = numpyro.sample("sigma_beta2", dist.HalfNormal(2))
-    beta = numpyro.sample("beta", dist.Normal(mu, sigma_beta2**0.5))
+    # mu = numpyro.sample("mu", dist.Normal(0, 1).expand([p, 1]))
+    sigma_beta2 = numpyro.sample("sigma_beta2", dist.HalfNormal(1))
+    # beta = numpyro.sample(
+    #     "beta",
+    #     dist.MultivariateNormal(jnp.zeros((p,)), jnp.sqrt(sigma_beta2) * jnp.eye(p)),
+    # )
+    beta = numpyro.sample("beta", dist.Normal(0, jnp.sqrt(sigma_beta2)).expand([p, 1]))
+    # beta = numpyro.sample("beta", dist.Normal(mu, jnp.sqrt(sigma_beta2)))
     # epsilon
-    sigma_epsilon2 = numpyro.sample("sigma_epsilon2", dist.HalfNormal(0.1))
+    sigma_epsilon2 = numpyro.sample("sigma_epsilon2", dist.HalfNormal(0.5))
     # print("beta: ", beta.shape)
     # print("X: ", X.shape)
     # deterministic statement
     y_hat = numpyro.deterministic("y_hat", X @ beta)
-    numpyro.sample("Y", dist.Normal(y_hat, sigma_epsilon2**0.5), obs=Y)
+    numpyro.sample("Y", dist.Normal(y_hat, jnp.sqrt(sigma_epsilon2)), obs=Y)
+
+
+def lm_simple(X, Y):
+    beta = numpyro.sample("beta", dist.Normal(0, 1).expand([X.shape[1], 1]))
+    mu = numpyro.deterministic("mu", X @ beta)
+    numpyro.sample("Y", dist.Normal(mu, 1), obs=Y)
 
 
 def run_inference(X, Y, rng_key, method, args):
+    model = lm
     if method == "mcmc":
-        kernel = NUTS(lm)
+        kernel = NUTS(model)
         mcmc = MCMC(
             kernel,
             num_warmup=args.num_warmup,
@@ -64,12 +77,12 @@ def run_inference(X, Y, rng_key, method, args):
             progress_bar=False if "NUMPYRO_SPHINXBUILD" in os.environ else True,
         )
         mcmc.run(rng_key, X, Y)
-        # mcmc.print_summary()ß
+        # mcmc.print_summary()
         return mcmc.get_samples()
     elif method == "svi" or method == "map":
-        guide = AutoDelta(lm) if method == "map" else AutoNormal(lm)
+        guide = AutoDelta(model) if method == "map" else AutoNormal(model)
         optimizer = optim.Adam(0.001)
-        svi = SVI(lm, guide, optimizer, Trace_ELBO(), X=X, Y=Y)
+        svi = SVI(model, guide, optimizer, Trace_ELBO(), X=X, Y=Y)
         svi_result = svi.run(rng_key, args.maxiter)
         return svi_result
     else:
@@ -85,53 +98,54 @@ def plot_results(method, result, start_time, end_time, args):
         # get posterior variance of epsilon
         sigma_epsilon2_post = result["sigma_epsilon2"]
         title = "MCMC with NUTS: %.3f s" % (end_time - start_time)
-        file_name = "lm_numpyro_mcmc.png"
+        # plot
+        plt.figure(figsize=(6, 4))
+        plt.plot(beta_post_mean, label="beta")
+        plt.plot(sigma_beta2_post, "r", label="sigma_beta2")
+        plt.hlines(
+            args.sigma_beta2,
+            0,
+            len(beta_post_mean),
+            colors="r",
+            linestyles="dashed",
+            label="sigma_beta2_true",
+        )
+        plt.plot(sigma_epsilon2_post, "y", label="sigma_epsilon2")
+        plt.hlines(
+            args.sigma_epsilon2,
+            0,
+            len(sigma_epsilon2_post),
+            colors="y",
+            linestyles="dashed",
+            label="sigma_epsilon2_true",
+        )
+        plt.xlabel("Iterations")
+        plt.ylabel("posterior value")
+        plt.legend()
+        plt.title(title)
+        plt.tight_layout()
+        file_name = "img/lm_numpyro_%s.png" % method
+        plt.savefig(file_name)
     else:
         params = result.params
         beta_post_mean = params["beta_auto_loc"]
         sigma_beta2_post = params["sigma_beta2_auto_loc"]
         sigma_epsilon2_post = params["sigma_epsilon2_auto_loc"]
         elbo = result.losses
+        plt.figure(figsize=(6, 4))
         plt.plot(elbo)
         plt.xlabel("Iterations")
         plt.ylabel("ELBO")
         plt.title("ELBO during training")
         plt.tight_layout()
-        plt.savefig("lm_numpyro_elbo.png")
+        plt.savefig("img/lm_numpyro_%s_elbo.png" % method)
 
         title = (
             "SVI with AutoNormal: %.3f s" % (end_time - start_time)
             if method == "svi"
             else "MAP with AutoDelta: %.3f s" % (end_time - start_time)
         )
-        file_name = "lm_numpyro_%s.png" % method
 
-    # plot
-    plt.figure(figsize=(6, 4))
-    plt.plot(beta_post_mean, label="beta")
-    # plot horizontal line
-    plt.plot(sigma_beta2_post, label="sigma_beta2")
-    plt.hlines(
-        args.sigma_beta2,
-        0,
-        plt.xlim()[1],
-        linestyles="dashed",
-        label="sigma_beta2_true",
-    )
-    plt.plot(sigma_epsilon2_post, label="sigma_epsilon2")
-    plt.hlines(
-        args.sigma_epsilon2,
-        0,
-        plt.xlim()[1],
-        linestyles="dashed",
-        label="sigma_epsilon2_true",
-    )
-    plt.xlabel("Iterations")
-    plt.ylabel("posterior value")
-    plt.legend()
-    plt.title(title)
-    plt.tight_layout()
-    plt.savefig(file_name)
     plt.show()
 
     # print results
@@ -156,13 +170,13 @@ def main(args):
     y = jnp.array(data["Y"])
     X = jnp.array(data["X"])
 
-    method = "mcmc"
+    # method = "mcmc"
     # method = "svi"
-    # method = "map"
+    method = "map"
 
     # record time
     start_time = time.time()
-    rng_key = random.PRNGKey(1)
+    rng_key = random.PRNGKey(args.seed)
     result = run_inference(X, y, rng_key, method, args)
     end_time = time.time()
     plot_results(method, result, start_time, end_time, args)
@@ -175,9 +189,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Linear Regression")
     parser.add_argument("--seed", nargs="?", default=42, type=int)
-    parser.add_argument("-n", "--num-samples", nargs="?", default=200, type=int)
+    parser.add_argument("-n", "--num-samples", nargs="?", default=100, type=int)
     parser.add_argument("-p", "--dim", nargs="?", default=10, type=int)
-    parser.add_argument("--sigma-beta2", nargs="?", default=0.5, type=float)
+    parser.add_argument("--sigma-beta2", nargs="?", default=2, type=float)
     parser.add_argument("--sigma-epsilon2", nargs="?", default=0.01, type=float)
     parser.add_argument("--num-warmup", nargs="?", default=20, type=int)
     parser.add_argument("--num-chains", nargs="?", default=1, type=int)
@@ -188,5 +202,6 @@ if __name__ == "__main__":
 
     numpyro.set_platform(args.device)
     numpyro.set_host_device_count(args.num_chains)
+    np.random.seed(args.seed)
 
     main(args)

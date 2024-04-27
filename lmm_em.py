@@ -311,7 +311,7 @@ if __name__ == "__main__":
         sigma_beta2_list,
         sigma_e2_list,
         beta_post_mean,
-    ) = lmm_em(y, X, Z, tol=1e-3, max_iter=1000)
+    ) = lmm_em(y, X, Z, tol=1e-6, max_iter=1000)
     end_time = time.time()
     print(
         "Run time: %d min %.2f s"

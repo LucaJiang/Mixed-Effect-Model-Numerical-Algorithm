@@ -7,6 +7,8 @@
 
 [EM Algorithm with MFVI](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/lmm_mfvi)
 
+[GMM](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/gmm)
+
 ## Codes:
 [Explore data](https://lucajiang.github.io/Mixed-Effect-Model-Numerical-Algorithm/explore_data)
 
