@@ -4,6 +4,7 @@
   - [From MM to GMM](#from-mm-to-gmm)
   - [Population Moments Conditions](#population-moments-conditions)
   - [GMM Estimator](#gmm-estimator)
+  - [Asymptotic properties](#asymptotic-properties)
   - [Implementation](#implementation)
   - [References](#references)
 
@@ -47,6 +48,18 @@ $$
 
 where $W_n$ is a non-negative definite matrix that usually depends on the data but converges to a constant positive definite matrix as $n \to \infty$.
 
+## Asymptotic properties
+
+Define
+
+$$G=\text{E}\left[\frac{\partial f(v_t, \theta)}{\partial \theta'}\right]\quad\text{and}\quad\Omega=\text{E}\left[f(v_t, \theta)f(v_t, \theta)'\right].$$
+
+Then, the GMM estimator is consistent if $G$ is of full rank and $\Omega$ is positive definite. It can be shown that taking $W\varpropto \Omega^{-1}$ will yield the most efficient estimator. And then, the asymptotic distribution of the GMM estimator is
+
+$$
+\sqrt{n}(\hat{\theta}-\theta_0) \xrightarrow{d} N(0, \Omega^{-1}G\Omega^{-1}).
+$$
+
 ## Implementation
 
 One difficulty with implementing the outlined method is that we cannot take $W=\Omega^{-1}$ because, by the definition of matrix $\Omega$, we need to know the value of $\theta_0$ in order to compute this matrix, and $\theta_0$ is precisely the quantity we do not know and are trying to estimate in the first place. In the case of $Y_t$ being iid we can estimate $W$ as
@@ -62,8 +75,7 @@ Several approaches exist to deal with this issue, the first one being the most p
 $$
 \hat{\theta}_{(i+1)}=\arg \min _{\theta \in \Theta}\left(\frac{1}{T} \sum_{t=1}^T g\left(Y_t, \theta\right)\right)^{\top} \hat{W}_T\left(\hat{\theta}_{(i)}\right)\left(\frac{1}{T} \sum_{t=1}^T g\left(Y_t, \theta\right)\right)
 $$
-
-Asymptotically no improvement can be achieved through such iterations, although certain Monte-Carlo experiments suggest that finite-sample properties of this estimator are slightly better. [citation needed]
+Asymptotically no improvement can be achieved through such iterations, although certain Monte-Carlo experiments suggest that finite-sample properties of this estimator are slightly better.
 - Continuously updating GMM (CUGMM, or CUE). Estimates $\hat{\theta}$ simultaneously with estimating the weighting matrix $W$ :
 $$
 \hat{\theta}=\arg \min _{\theta \in \Theta}\left(\frac{1}{T} \sum_{t=1}^T g\left(Y_t, \theta\right)\right)^{\top} \hat{W}_T(\theta)\left(\frac{1}{T} \sum_{t=1}^T g\left(Y_t, \theta\right)\right)
